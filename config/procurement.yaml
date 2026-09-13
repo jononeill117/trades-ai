@@ -1,0 +1,10 @@
+# Procurement agent configuration.
+
+# The parts list to price: CSV or JSON with sku/description/qty.
+parts_list: fixtures/parts_list.csv
+
+# Savings are measured against this supplier — your "usual" one.
+baseline_supplier: ferguson
+
+# Where the quote report is emailed (when GMAIL_* is set).
+quote_email_to: ""

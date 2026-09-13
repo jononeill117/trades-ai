@@ -1,0 +1,36 @@
+# Availability rules for the dispatch agent.
+# Times are local "YYYY-MM-DD HH:MM" / "HH:MM". Days: mon..sun.
+
+slot_granularity_minutes: 60
+
+technicians:
+  - name: Ray
+    trades: [plumbing]
+    shifts:
+      - days: [mon, tue, wed, thu, fri]
+        start: "08:00"
+        end: "17:00"
+
+  - name: Dee
+    trades: [hvac, electrical]
+    shifts:
+      - days: [mon, tue, wed, thu, fri, sat]
+        start: "07:00"
+        end: "15:00"
+
+# Times nobody works: holidays, all-hands meetings, supply runs.
+blackouts:
+  - start: "2026-09-15 12:00"
+    end: "2026-09-15 13:30"
+    reason: "team lunch / all-hands"
+
+# Jobs already on the board — the scheduler routes around them.
+existing_jobs:
+  - tech: Ray
+    start: "2026-09-14 09:00"
+    end: "2026-09-14 11:00"
+    ref: "JOB-1000 follow-up"
+  - tech: Dee
+    start: "2026-09-14 07:00"
+    end: "2026-09-14 09:30"
+    ref: "PM-332 tune-up"

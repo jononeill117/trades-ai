@@ -1,0 +1,25 @@
+# Jobber adapter config — COMMUNITY EXAMPLE.
+# Fill these in to match YOUR account; selectors are placeholders.
+# Do NOT put credentials here — use a Solari browser profile.
+
+base_url: ""    # e.g. https://secure.getjobber.com
+
+selectors:
+  url.login: "/login"
+  url.new_job: "/jobs/new"             # placeholder — check your account
+  url.job: "/jobs/{id}"
+  login.email: "#login"
+  login.password: "#password"
+  login.submit: "button[type=submit]"
+  job.customer: "input[name=client]"
+  job.site: "input[name=property]"
+  job.tenant: "input[name=contact]"
+  job.tenant_phone: "input[name=phone]"
+  job.trade: "input[name=trade]"
+  job.priority: "input[name=priority]"
+  job.window_start: "input[name=start]"
+  job.window_end: "input[name=end]"
+  job.notes: "textarea[name=instructions]"
+  job.submit: "#save"
+  confirm.button: "#confirm"
+  confirm.status: ".status"

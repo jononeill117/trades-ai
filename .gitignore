@@ -1,0 +1,20 @@
+# Secrets — never commit these
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Run artifacts
+runs/*.jsonl
+out/*.md
+out/*.html
+!runs/.gitkeep
+!out/.gitkeep
+
+# OS noise
+.DS_Store

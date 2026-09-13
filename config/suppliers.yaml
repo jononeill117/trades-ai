@@ -1,0 +1,23 @@
+# Supplier adapters. Extraction patterns live here so a markup change on a
+# supplier's site is a config edit, not a code change.
+#
+# profile: name of YOUR Solari browser profile holding a logged-in session —
+# attach it and the agent sees your contract pricing. Credentials never go in
+# this file or this repo.
+
+suppliers:
+  ferguson:
+    enabled: true
+    base_url: "https://www.ferguson.com"
+    profile: ""            # e.g. "my-ferguson-login"
+    patterns: {}           # override extraction regexes here if needed
+  supplyhouse:
+    enabled: true
+    base_url: "https://www.supplyhouse.com"
+    profile: ""
+    patterns: {}
+  homedepot_pro:
+    enabled: true
+    base_url: "https://www.homedepot.com"
+    profile: ""
+    patterns: {}

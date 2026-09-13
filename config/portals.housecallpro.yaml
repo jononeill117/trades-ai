@@ -1,0 +1,25 @@
+# Housecall Pro adapter config — COMMUNITY EXAMPLE.
+# Fill these in to match YOUR account; selectors are placeholders.
+# Do NOT put credentials here — use a Solari browser profile.
+
+base_url: ""    # e.g. https://pro.housecallpro.com
+
+selectors:
+  url.login: "/pro/log_in"
+  url.new_job: "/pro/jobs/new"         # placeholder — check your account
+  url.job: "/pro/jobs/{id}"
+  login.email: "#user_email"
+  login.password: "#user_password"
+  login.submit: "button[type=submit]"
+  job.customer: "input[name=customer]"
+  job.site: "input[name=address]"
+  job.tenant: "input[name=contact]"
+  job.tenant_phone: "input[name=phone]"
+  job.trade: "input[name=trade]"
+  job.priority: "input[name=priority]"
+  job.window_start: "input[name=start]"
+  job.window_end: "input[name=end]"
+  job.notes: "textarea[name=notes]"
+  job.submit: "#create-job"
+  confirm.button: "#confirm"
+  confirm.status: ".job-status"

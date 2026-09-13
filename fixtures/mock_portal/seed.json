@@ -1,0 +1,20 @@
+{
+  "settings": {
+    "gui_confirm_required": true
+  },
+  "jobs": [
+    {
+      "id": "JOB-1000",
+      "status": "booked",
+      "customer_name": "Maple Property Group",
+      "site_address": "4 Elm St, Dayton OH 45402",
+      "tenant_name": "Priya Nair",
+      "tenant_phone": "937-555-0102",
+      "trade": "electrical",
+      "priority": "normal",
+      "window_start": "2026-09-11 09:00",
+      "window_end": "2026-09-11 11:00",
+      "notes": "Replace GFCI outlets in kitchen. (Pre-seeded demo job.)"
+    }
+  ]
+}

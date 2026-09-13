@@ -1,0 +1,16 @@
+From: "Maple Property Group" <workorders@maplepm.example>
+To: dispatch@yourshop.example
+Subject: Work Order WO-4471 — Plumbing — 12 Birch Ln Unit 3
+Message-ID: <wo-4471@maplepm.example>
+Date: Sun, 13 Sep 2026 07:42:00 -0400
+Content-Type: text/plain; charset=utf-8
+
+Work Order: WO-4471
+Customer: Maple Property Group
+Site: 12 Birch Ln Unit 3, Dayton OH 45410
+Tenant: Rosa Delgado — 937-555-0184 — rosa.delgado@example.com
+Trade: Plumbing
+Priority: High
+SLA: 2026-09-14 08:00 to 2026-09-16 17:00
+Notes: Kitchen sink drain backing up; tenant reports standing water.
+Unit is occupied — please call tenant 30 min before arrival.

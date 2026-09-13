@@ -1,0 +1,26 @@
+# Dispatch agent configuration — plain-language knobs.
+# Anything sensitive lives in .env, never here.
+
+# Where work-order emails come from: "fixture" (bundled samples) or "gmail".
+inbox: fixture
+fixture_dir: fixtures/work_orders
+# When inbox=gmail: only fetch unread mail whose subject contains this.
+gmail_subject_filter: "Work Order"
+
+# Which portal to book into: "mock" (bundled FieldDesk portal — works out of
+# the box) or a community adapter name (servicetitan | housecallpro | jobber).
+portal: mock
+# For community adapters: your portal's base URL, e.g. https://go.servicetitan.com
+portal_base_url: ""
+# Solari browser profile that holds your portal login (live mode). You sign in
+# once by hand; every run after that starts already logged in.
+portal_profile: "trades-dispatch"
+
+# Mock portal seed data (pre-existing jobs + settings).
+portal_seed: fixtures/mock_portal/seed.json
+
+# Who works when — see that file for the shape.
+availability: config/dispatch.availability.yaml
+
+# If an email has no tenant/customer email, confirmations go here instead.
+customer_fallback_email: ""

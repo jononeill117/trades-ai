@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trades-ai"
+version = "0.1.0"
+description = "Open-source AI automation for home-service trades, powered by Solari cloud browsers, sandboxes, and desktops."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "solari-browser>=0.1.3",
+    "solari-sandbox>=0.2.0",
+    "solari-desktop>=0.2.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools]
+packages = ["core", "core.notify", "packages.dispatch", "packages.dispatch.portals", "packages.procurement", "packages.procurement.suppliers"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages", "tests"]
+pythonpath = ["."]
