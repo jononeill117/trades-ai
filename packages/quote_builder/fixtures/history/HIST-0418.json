@@ -1,0 +1,12 @@
+{
+  "history_id": "HIST-0418",
+  "trade": "plumbing",
+  "summary": "Main line auger for recurring backup",
+  "line_items": [
+    {"item": "drain_auger", "description": "Main line auger service through cleanout", "qty": 1, "unit": "visit", "unit_price": 325.00}
+  ],
+  "scope_notes": "Priced per visit through existing cleanout. Camera inspection quoted separately if wanted.",
+  "exploratory": ["root intrusion vs. belly in line cannot be known without camera"],
+  "outcome": "sold",
+  "total": 325.00
+}

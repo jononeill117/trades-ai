@@ -1,0 +1,16 @@
+# Weekly brief configuration — the tech-meeting intelligence brief.
+
+# Week label stamped on the brief and used for idempotency (one delivery
+# per week label — re-runs rewrite the doc but do not re-notify).
+week: "2026-W37"
+
+# Directory holding the week's exports. Replace with your shop's exports:
+# jobs.csv, quotas.csv, callbacks.csv, failed_jobs.csv, wins.csv,
+# reviews.json, surveys.csv — see packages/weekly_brief/fixtures/ for the
+# exact shapes.
+fixtures: packages/weekly_brief/fixtures
+
+# Detection thresholds.
+quota_attainment_min: 0.9    # flag techs below this share of weekly quota
+close_rate_min: 0.5          # flag close rates below this
+callback_rate_max: 0.15      # flag when callbacks exceed this share of jobs

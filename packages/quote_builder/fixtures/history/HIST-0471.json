@@ -1,0 +1,13 @@
+{
+  "history_id": "HIST-0471",
+  "trade": "hvac",
+  "summary": "Furnace tune-up plus failed capacitor on condenser",
+  "line_items": [
+    {"item": "furnace_tune", "description": "Furnace tune-up and CO test", "qty": 1, "unit": "visit", "unit_price": 189.00},
+    {"item": "capacitor", "description": "Condenser capacitor replacement", "qty": 1, "unit": "each", "unit_price": 240.00}
+  ],
+  "scope_notes": "Tune-up is flat rate. Capacitor priced installed.",
+  "exploratory": [],
+  "outcome": "sold",
+  "total": 429.00
+}

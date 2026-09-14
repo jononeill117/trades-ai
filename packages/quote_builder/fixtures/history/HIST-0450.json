@@ -1,0 +1,14 @@
+{
+  "history_id": "HIST-0450",
+  "trade": "electrical",
+  "summary": "100A panel upgrade, overhead service",
+  "line_items": [
+    {"item": "panel_100a", "description": "100A panel upgrade, permit included", "qty": 1, "unit": "job", "unit_price": 3200.00},
+    {"item": "gfci", "description": "GFCI outlet install/replace", "qty": 2, "unit": "each", "unit_price": 165.00}
+  ],
+  "scope_notes": "Included permit and utility coordination. Excluded service mast repair.",
+  "exploratory": ["condition of service entrance cable", "grounding electrode compliance"],
+  "concerns": ["utility disconnect scheduling can add 1-2 weeks"],
+  "outcome": "sold",
+  "total": 3530.00
+}

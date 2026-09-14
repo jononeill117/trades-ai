@@ -39,11 +39,12 @@ mock, it won't in live either.
 | --- | --- | --- |
 | `SOLARI_API_KEY` | all live sessions | every package |
 | `SLACK_WEBHOOK_URL` | ops digests + approval channel | most packages |
-| `GMAIL_USER` / `GMAIL_APP_PASSWORD` | email send + work-order ingest | dispatch, invoice-chaser, quote-follower, quote-builder, meeting-prep |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` | email send + work-order ingest | dispatch, invoice-chaser, quote-follower, quote-builder, weekly-brief |
 | `QUO_*` | SMS via Quo | dispatch, missed-call-textback, quote-follower |
 
 Then `config/*.yaml` per package: portal URLs + selectors, supplier list,
-escalation policy, pricebook path, approval rules. Anything not
+escalation policy, quote-history path, approval rules, autonomy grants
+(`config/autonomy.yaml` — see docs/trust.md). Anything not
 configured degrades to a logged "would have sent" — safe to roll out
 incrementally.
 
@@ -77,7 +78,7 @@ enough:
 
 ```cron
 */15 * * * *  cd /opt/trades-ai && .venv/bin/python demo.py --live --only missed-call-textback
-0   7 * * *   cd /opt/trades-ai && .venv/bin/python demo.py --live --only meeting-prep
+0   7 * * 1   cd /opt/trades-ai && .venv/bin/python demo.py --live --only weekly-brief
 0   9 * * 1-5 cd /opt/trades-ai && .venv/bin/python demo.py --live --only invoice-chaser
 ```
 

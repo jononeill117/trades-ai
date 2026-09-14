@@ -53,6 +53,7 @@ class ApprovalDecision:
     approved: bool
     decided_by: str
     note: str = ""
+    edited: bool = False        # approver changed the payload before approving
     ts: str = field(default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%S%z"))
 
 
@@ -67,6 +68,7 @@ class MockApprovalBackend:
 
     def __init__(self, decision: str = "approve"):
         self._approved = decision != "deny"
+        self._edited = decision == "edit"
 
     async def decide(self, req: ApprovalRequest) -> ApprovalDecision:
         print(f"[plan] approval required ({req.id})")
@@ -78,7 +80,9 @@ class MockApprovalBackend:
             print(f"[plan]   payload:   {preview[:300]}")
         verdict = "approve" if self._approved else "deny"
         print(f"[plan]   mock decision: {verdict} (config/approvals.yaml: mock_decision)")
-        return ApprovalDecision(self._approved, decided_by="mock", note="auto per config")
+        return ApprovalDecision(self._approved, decided_by="mock",
+                                note="auto per config",
+                                edited=self._edited)
 
 
 class CliApprovalBackend:
@@ -95,11 +99,13 @@ class CliApprovalBackend:
                 print(f"  {k}: {v}", file=sys.stderr)
         try:
             answer = await asyncio.to_thread(
-                input, f"Approve {req.action}? [y/N] ")
+                input, f"Approve {req.action}? [y/e(dit)/N] ")
         except (EOFError, OSError):
             return ApprovalDecision(False, decided_by="cli", note="no tty — fail closed")
-        ok = answer.strip().lower() in ("y", "yes")
-        return ApprovalDecision(ok, decided_by="cli", note=answer.strip())
+        a = answer.strip().lower()
+        ok = a in ("y", "yes", "e", "edit", "edited")
+        return ApprovalDecision(ok, decided_by="cli", note=answer.strip(),
+                                edited=a in ("e", "edit", "edited"))
 
 
 class SlackApprovalBackend:
@@ -155,6 +161,7 @@ class ApprovalGate:
         # SMS template that is legally safe to send unattended). Exact-match
         # on action name; the payload is still logged either way.
         self.preapproved = set(preapproved or [])
+        self.last_decision: ApprovalDecision | None = None
 
     async def require(self, action: str, channel: str, summary: str,
                       payload: dict[str, Any] | None = None,
@@ -182,6 +189,7 @@ class ApprovalGate:
                 approved=decision.approved, decided_by=decision.decided_by,
                 note=decision.note, requested_at=req.ts, decided_at=decision.ts,
             )
+        self.last_decision = decision
         return decision.approved
 
 

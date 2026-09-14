@@ -28,6 +28,7 @@ before spending a cent.
                  │  RunLog ───── JSONL audit log (runs/)           │
                  │  CostTracker ─ measured session usage + pricing │
                  │  ApprovalGate ─ fail-closed human gates         │
+                 │  TrustLedger ── earned autonomy, owner-granted  │
                  │  notify/ ──── Slack · Gmail · Quo SMS           │
                  │  drivers/ ─── PageDriver over Playwright/HTTP   │
                  └───────▲───────────────────────────▲────────────┘
@@ -63,6 +64,17 @@ on. Backends: CLI prompt, Slack, mock decisions for tests, and a
 `preapproved_actions` list for genuinely low-risk actions you choose to
 auto-approve. Every request and decision lands in the run log.
 
+### Progressive trust
+
+Nobody hands customer-facing sends to a new system on day one. Every gated
+action type starts at `gate` in `config/autonomy.yaml`; the trust ledger
+(`out/trust_ledger.json`) records how each approval went — unchanged,
+edited, denied. When an action's confidence crosses the bar, the system
+**proposes** loosening — logged, echoed in run output, posted to ops — but
+it never loosens itself. The owner grants or revokes per action type;
+`auto` actions still log fully and are marked `trust_auto`. Philosophy and
+config: [docs/trust.md](docs/trust.md).
+
 ### Cost instrumentation
 
 Every run meters its Solari sessions (primitive, session id, wall-clock
@@ -85,8 +97,8 @@ python runs/cost-report.py --package dispatch
 | `review-responder` | reviews → draft replies → approve → publish → digest | sandbox + browser | Low-star replies need a human-edit lane; publishing is gated |
 | `invoice-chaser` | aging AR + payments → match → escalate-by-days → remind | sandbox | Escalation tone is policy, not vibes; recovered revenue is counted only from real payment events |
 | `quote-follower` | stale quotes → bucket → follow up → track | browser or CSV | "Sent but ghosted" vs "never sent" need different follow-ups |
-| `meeting-prep` | job history → normalize → flag → per-tech briefs | sandbox | Callbacks, complaints, and warranty-risk jobs surfaced before the morning meeting |
-| `quote-builder` | job spec → pricebook lookup → line items → quote → deliver | sandbox | Unpriced items are flagged unconfirmed, never silently estimated |
+| `weekly-brief` | week's exports → aggregate → detect friction/wins → leader's meeting brief | sandbox | The owner walks into the weekly tech meeting knowing wins, friction themes, and per-tech coaching notes — every claim cited to its source record |
+| `quote-builder` | plain-English job description → history-trained pricing → full quote doc → deliver | sandbox | Prices come from the band of what the shop actually charged, every line cites its source jobs; exclusions, exploratory areas, risks, and terms are always on the page |
 | `photo-marketer` | job photos → dedupe/clean → captions → approve → post | sandbox + browser | Exif/PII stripped in-sandbox; nothing posts without approval |
 
 Per-package docs: `packages/<name>/README.md`. Adapter contracts:
@@ -159,8 +171,10 @@ Replay manifest: [docs/demo/replays.json](docs/demo/replays.json).
   with a logged reason because no real review platform is configured.
 - **quote-follower** — fixture list URL detected; fell back to CSV source
   in live mode rather than scraping a fake domain.
-- **meeting-prep, quote-builder, photo-marketer** — real sandbox runs;
-  photo publish boundary not exercised (fixture composer URL).
+- **weekly-brief, quote-builder, photo-marketer** — real sandbox runs
+  (weekly-brief and quote-builder in their current form were run in mock;
+  their predecessors ran live sandboxes on 2026-09-13); photo publish
+  boundary not exercised (fixture composer URL).
 
 **Replays.** Replays on this account have been unreliable — most sessions
 return `ReplayUnavailable` (404, non-retryable) even after polling. One
@@ -189,13 +203,13 @@ Nothing here is faked.
 
 ```
 core/            SolariCore + MockSolari, PageDriver, RunLog, CostTracker,
-                 ApprovalGate, notify/
+                 ApprovalGate, TrustLedger (progressive trust), notify/
 packages/        nine use-case packages, each with adapters, tests, README
 config/          YAML knobs — portals, suppliers, approvals, pricing, per-package
-fixtures/        fictional work orders, reviews, AR aging, pricebook, photos…
+fixtures/        fictional work orders, reviews, AR aging, quote history, photos…
 scripts/         collect_replays.py — honest replay/artifact collection
-docs/            architecture.md · adapter-guide.md · deployment.md ·
-                 demo/ (replay evidence) · launch/ (announcement drafts)
+docs/            architecture.md · trust.md · adapter-guide.md ·
+                 deployment.md · demo/ (replay evidence) · launch/
 demo.py          the runner · new_usecase.py  the scaffolder
 healthcheck.py   selector/fixture drift checks · runs/cost-report.py
 ```

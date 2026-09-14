@@ -18,8 +18,8 @@ through `core`.
                  └───────▲───────────────────────────▲────────────┘
                          │                           │
    ┌─────────┬───────────┴───────────┬───────────────┴──┬─────────┐
-   │dispatch │missed-call- │review-  │invoice- │quote-  │meeting- │
-   │         │textback     │responder│chaser   │follower│prep     │
+   │dispatch │missed-call- │review-  │invoice- │quote-  │weekly-  │
+   │         │textback     │responder│chaser   │follower│brief    │
    │procure- │             │         │         │        │         │
    │ment     │quote-builder│         │         │        │photo-   │
    │         │             │         │         │        │marketer │

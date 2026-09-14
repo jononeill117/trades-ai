@@ -1,4 +1,4 @@
-# X post — DRAFT (Jon posts this himself)
+# X post — DRAFT (the maintainer posts this)
 
 Built trades-ai: 9 open-source AI automations for home-service trades, running on @getsolari cloud browsers + sandboxes.
 

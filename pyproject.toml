@@ -20,7 +20,7 @@ dependencies = [
 dev = ["pytest>=8.0"]
 
 [tool.setuptools]
-packages = ["core", "core.notify", "packages.dispatch", "packages.dispatch.portals", "packages.procurement", "packages.procurement.suppliers"]
+packages = ["core", "core.notify", "packages.dispatch", "packages.dispatch.portals", "packages.procurement", "packages.procurement.suppliers", "packages.weekly_brief", "packages.quote_builder"]
 
 [tool.pytest.ini_options]
 testpaths = ["packages", "tests"]

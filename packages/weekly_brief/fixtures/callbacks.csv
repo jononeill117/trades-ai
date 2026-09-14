@@ -1,0 +1,6 @@
+job_id,tech,reason,days_since_install,warranty,date
+JOB-1092,Marcus,water heater relief valve dripping after install,6,true,2026-09-08
+JOB-1088,Marcus,water heater flue not drafting — soot smell reported,11,true,2026-09-10
+JOB-1095,Dee,disposal vibrating loose under sink,4,false,2026-09-09
+JOB-1099,Marcus,new water heater pilot keeps going out,3,true,2026-09-12
+JOB-1074,Priya,thermostat wiring shorted after panel work,9,true,2026-09-11

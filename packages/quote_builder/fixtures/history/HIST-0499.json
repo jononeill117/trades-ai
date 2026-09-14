@@ -1,0 +1,14 @@
+{
+  "history_id": "HIST-0499",
+  "trade": "plumbing",
+  "summary": "Tankless conversion quote — customer declined",
+  "line_items": [
+    {"item": "tankless_install", "description": "Gas tankless water heater, supplied and installed (venting included)", "qty": 1, "unit": "each", "unit_price": 2950.00},
+    {"item": "gas_line_upsize", "description": "Upsize gas line run to tankless unit", "qty": 1, "unit": "job", "unit_price": 340.00},
+    {"item": "haul_away", "description": "Drain, disconnect and haul away old tank", "qty": 1, "unit": "job", "unit_price": 80.00}
+  ],
+  "scope_notes": "Lost to a cheaper bid that excluded venting — scope gap, not price gap.",
+  "exploratory": ["vent path", "gas meter capacity"],
+  "outcome": "lost",
+  "total": 3370.00
+}

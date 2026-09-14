@@ -24,10 +24,11 @@
     "browser_sessions": 0,
     "replays": []
   },
-  "meeting-prep": {
-    "run_log": "meeting-prep-20260913-170920-505679.jsonl",
+  "weekly-brief": {
+    "run_log": null,
     "browser_sessions": 0,
-    "replays": []
+    "replays": [],
+    "note": "replaced the earlier internal-briefing package; sandbox-only, no browser sessions"
   },
   "missed-call-textback": {
     "run_log": "missed-call-textback-20260913-170846-04d387.jsonl",

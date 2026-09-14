@@ -1,0 +1,6 @@
+job_id,tech,quote_amount,reason
+JOB-1102,Marcus,3100.00,customer said the quote was double a competitor's — no second options offered
+JOB-1107,Marcus,2750.00,customer wanted to think about it — no follow-up scheduled
+JOB-1109,Dee,890.00,chose a cheaper handyman — price-sensitive small job
+JOB-1110,Marcus,1950.00,never heard back after quote was left with tenant
+JOB-1116,Marcus,4200.00,quote arrived two days after the visit — customer already booked elsewhere

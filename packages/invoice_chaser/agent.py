@@ -19,6 +19,7 @@ import time
 from datetime import date
 from pathlib import Path
 
+from core import trust as trust_mod
 from core.approvals import get_gate
 from core.audit import RunLog
 from core.config import load_yaml, repo_root
@@ -64,6 +65,7 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
     cfg = {**_cfg(), **(cfg or {})}
     mode = cfg.get("mode", "mock")
     gate = get_gate(mode, run_log)
+    trust = trust_mod.get_ledger()
     today = date.today()
     state_path = repo_root() / "out" / "invoice_chaser_state.json"
     state = _load_state(state_path)
@@ -137,7 +139,8 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             continue
 
         to = inv.email if reminder.channel == "email" else inv.phone
-        approved = await gate.require(
+        approved = await trust_mod.require(
+            gate, trust, run_log,
             f"invoice.reminder.{reminder.channel}", reminder.channel,
             f"{reminder.tone} reminder to {inv.customer} ({to}) — "
             f"{inv.invoice_id} ${inv.amount:,.2f}, step {reminder.step}",

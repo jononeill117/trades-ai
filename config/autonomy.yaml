@@ -1,0 +1,51 @@
+# Progressive trust — the owner is always in charge. See docs/trust.md.
+#
+# Every gated action type starts at `gate`: a human approves each one.
+# The trust ledger (out/trust_ledger.json) tracks how those decisions go.
+# When confidence for an action crosses `thresholds`, the system PROPOSES
+# loosening — it never loosens itself. Grant or revoke here:
+#
+#   levels:
+#     review.publish: auto     # you earned it
+#     review.publish: gate     # back to approvals — revoke any time
+#
+# `auto` actions still log every send and are marked `trust_auto` in the
+# run log. Anything not listed stays gated.
+
+levels:
+  review.publish: gate
+  invoice.reminder.email: gate
+  invoice.reminder.sms: gate
+  quote.deliver: gate
+  sms.textback: gate
+  social.post: gate
+
+thresholds:
+  min_attempts: 25        # decisions seen before proposing
+  min_confidence: 0.95    # share approved unchanged
+
+# Human-friendly names and proposal text per action.
+labels:
+  review.publish: "review replies"
+  invoice.reminder.email: "invoice reminders by email"
+  invoice.reminder.sms: "invoice reminders by SMS"
+  quote.deliver: "quotes"
+  sms.textback: "missed-call textbacks"
+  social.post: "social posts"
+
+proposals:
+  review.publish: "auto-post replies to 5-star reviews, keep gating 1-3 stars."
+  invoice.reminder.email: "auto-send the friendly (first-touch) email reminder, keep gating firm/final steps."
+  invoice.reminder.sms: "auto-send friendly SMS reminders, keep gating final notices."
+  quote.deliver: "auto-deliver quotes under a price ceiling you set, keep gating anything larger."
+  sms.textback: "auto-send the standard textback template, keep gating anything off-template."
+  social.post: "auto-post completed-job photos, keep gating anything with a customer name."
+
+# Optional: import decisions made before the ledger existed (first run only
+# — delete this block to start cold). These numbers seed the demo so a
+# proposal fires in `demo.py --mock`.
+seed:
+  review.publish:
+    approved: 46
+    edited: 0
+    denied: 1

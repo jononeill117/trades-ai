@@ -17,10 +17,13 @@ The toolkit covers the whole loop:
 - invoice-chaser: aging AR reconciled in a sandbox → escalating reminders
 - review-responder: drafts replies, low-star reviews get a human-edit
   lane, publishing is approval-gated
-- quote-builder / quote-follower: priced quotes from a pricebook, stale
-  quotes chased
-- meeting-prep: job history → per-tech briefs flagging callbacks and
-  warranty risk
+- quote-builder / quote-follower: plain-English job descriptions priced
+  from the shop's own quote history — every line cites the jobs behind it;
+  stale quotes chased
+- weekly-brief: the week's reviews, callbacks, quotas, and lost quotes →
+  a leader's brief for the weekly tech meeting
+- progressive trust: every action starts human-gated; the system proposes
+  earned autonomy per action type, and the owner grants or revokes it
 - procurement: parts list → price-checks across supplier sites → cheapest
   compliant quote
 - photo-marketer: job photos cleaned in-sandbox → approved → posted

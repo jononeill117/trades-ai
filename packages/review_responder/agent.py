@@ -20,6 +20,7 @@ import json
 import time
 from pathlib import Path
 
+from core import trust as trust_mod
 from core.approvals import get_gate
 from core.audit import RunLog
 from core.config import load_yaml, repo_root
@@ -71,6 +72,7 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
     cfg = {**_cfg(), **(cfg or {})}
     mode = cfg.get("mode", "mock")
     gate = get_gate(mode, run_log)
+    trust = trust_mod.get_ledger()
     state = ProcessedState(repo_root() / "out" / "review_responder_state.json")
     provider = get_provider(cfg.get("drafting", {}))
     voice = cfg.get("voice", {})
@@ -99,7 +101,8 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                      lane=draft.lane, provider=draft.provider,
                      warnings=draft.warnings)
 
-        approved = await gate.require(
+        approved = await trust_mod.require(
+            gate, trust, run_log,
             "review.publish", "gbp",
             f"[{draft.lane}] Reply to {review.stars}★ review by "
             f"{review.author}: {draft.text[:100]}",

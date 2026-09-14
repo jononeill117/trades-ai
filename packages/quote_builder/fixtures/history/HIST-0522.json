@@ -1,0 +1,14 @@
+{
+  "history_id": "HIST-0522",
+  "trade": "plumbing",
+  "summary": "50 gal gas water heater swap, garage, emergency weekend call",
+  "line_items": [
+    {"item": "wh_50_ng_install", "description": "50 gal natural gas water heater, supplied and installed", "qty": 1, "unit": "each", "unit_price": 1580.00},
+    {"item": "haul_away", "description": "Drain, disconnect and haul away old unit", "qty": 1, "unit": "job", "unit_price": 80.00},
+    {"item": "expansion_tank", "description": "Thermal expansion tank, installed", "qty": 1, "unit": "each", "unit_price": 260.00}
+  ],
+  "scope_notes": "Weekend callout. Customer supplied nothing; we supplied unit.",
+  "exploratory": ["shutoff valve condition"],
+  "outcome": "sold",
+  "total": 1920.00
+}

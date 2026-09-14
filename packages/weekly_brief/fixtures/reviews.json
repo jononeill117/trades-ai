@@ -1,0 +1,65 @@
+[
+  {
+    "id": "rev-201",
+    "author": "Hollis T.",
+    "stars": 5,
+    "ts": "2026-09-08T16:10:00",
+    "tech": "Priya",
+    "job_ref": "JOB-1104",
+    "text": "Tankless install done in a day, everything explained, spotless cleanup. Worth the price."
+  },
+  {
+    "id": "rev-202",
+    "author": "Bea L.",
+    "stars": 2,
+    "ts": "2026-09-09T09:40:00",
+    "tech": "Marcus",
+    "job_ref": "JOB-1092",
+    "text": "New water heater is leaking at a valve already. They came back but I had to call twice to get someone out."
+  },
+  {
+    "id": "rev-203",
+    "author": "R. Okafor",
+    "stars": 4,
+    "ts": "2026-09-10T12:05:00",
+    "tech": "Dee",
+    "job_ref": "JOB-1112",
+    "text": "Solid repair, fair price. Scheduling window was vague — I waited most of the day."
+  },
+  {
+    "id": "rev-204",
+    "author": "Sam K.",
+    "stars": 1,
+    "ts": "2026-09-11T08:30:00",
+    "tech": "Marcus",
+    "job_ref": "JOB-1088",
+    "text": "Quoted one price on the phone, invoiced $220 more. No one mentioned the permit fee up front."
+  },
+  {
+    "id": "rev-205",
+    "author": "Ilse M.",
+    "stars": 5,
+    "ts": "2026-09-11T17:55:00",
+    "tech": "Priya",
+    "job_ref": "JOB-1114",
+    "text": "Priya walked me through every option and never pushed the expensive one. Best experience we've had with a contractor."
+  },
+  {
+    "id": "rev-206",
+    "author": "Anonymous",
+    "stars": 3,
+    "ts": "2026-09-12T14:20:00",
+    "tech": "Marcus",
+    "job_ref": "JOB-1113",
+    "text": "Panel upgrade works fine but the crew left drywall dust everywhere and the follow-up call never came."
+  },
+  {
+    "id": "rev-207",
+    "author": "Toby R.",
+    "stars": 5,
+    "ts": "2026-09-12T18:45:00",
+    "tech": "Priya",
+    "job_ref": "JOB-1117",
+    "text": "Third time using this shop. On time, on quote, boot covers every visit."
+  }
+]

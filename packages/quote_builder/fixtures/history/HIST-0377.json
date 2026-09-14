@@ -1,0 +1,15 @@
+{
+  "history_id": "HIST-0377",
+  "trade": "plumbing",
+  "summary": "Tankless conversion from 50 gal gas tank, garage wall mount, new gas line upsize",
+  "line_items": [
+    {"item": "tankless_install", "description": "Gas tankless water heater, supplied and installed (venting included)", "qty": 1, "unit": "each", "unit_price": 3150.00},
+    {"item": "gas_line_upsize", "description": "Upsize gas line run to tankless unit", "qty": 1, "unit": "job", "unit_price": 380.00},
+    {"item": "haul_away", "description": "Drain, disconnect and haul away old tank", "qty": 1, "unit": "job", "unit_price": 95.00}
+  ],
+  "scope_notes": "Included new venting through rim joist. Excluded any gas-meter upgrade the utility might require.",
+  "exploratory": ["existing gas line size and meter capacity", "vent path clearances"],
+  "concerns": ["utility may require meter upsizing — utility schedules their own work"],
+  "outcome": "sold",
+  "total": 3625.00
+}

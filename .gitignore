@@ -20,3 +20,4 @@ out/*.html
 .DS_Store
 out/approvals/
 out/*_state.json
+out/trust_ledger.json

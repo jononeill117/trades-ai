@@ -1,20 +1,36 @@
 # Quote builder configuration.
 
-# The pricebook is configuration, not model knowledge — stable item IDs,
-# descriptions, unit prices, taxability. Edit this for YOUR shop.
-pricebook: fixtures/pricebook/pricebook.csv
+# The training corpus: this shop's prior quotes and invoices, one JSON per
+# job — line items, prices actually charged, scope notes, outcome. The
+# builder prices new quotes from these bands and cites the jobs behind
+# every line. Add your own history here.
+history: packages/quote_builder/fixtures/history
 
-# The job to quote: details + photo paths + optional explicit quantities.
+# The job to quote: a plain-English description plus optional explicit
+# quantities (a human's choices always win over keyword matching).
 job: fixtures/quote_jobs/job-rivera.json
 
-# Applied to taxable line items only. 0 = no tax.
+# Applied to the subtotal. 0 = no tax.
 tax_rate: 0.07
 
-# Printed on the quote.
-assumptions:
-  - "Standard install access; no code upgrades unless listed"
+# Scope — printed on every quote. Exclusions are never allowed to be empty
+# (the sandbox worker falls back to standard defaults if this is cleared).
+inclusions:
+  - "All labor and materials listed above, installed to manufacturer spec"
+  - "Startup, test, and walkthrough of the finished work"
+  - "Standard cleanup of the work area"
 exclusions:
-  - "Permits unless listed"
-  - "Drywall/paint repair"
+  - "Permits and inspection fees unless listed as a line item"
+  - "Drywall, paint, or finish repair"
+  - "Utility-side work (meter, service drop) — the utility schedules their own work"
+  - "Pre-existing code violations unrelated to this scope"
+
+# Printed on every quote — edit for your shop.
+terms:
+  deposit: "40% due on acceptance to schedule the work; materials are ordered once the deposit clears."
+  payment: "Balance due on completion. Card, check, or ACH accepted."
+  validity: "This quote is valid for 30 days from the date above — material pricing moves, so past that we reconfirm before scheduling."
+  escalation_policy: "If work uncovers something outside the scope above (corroded fittings, venting, code-required upgrades), we stop, show you, and price the change in writing. Work only continues after you approve the change — nothing is ever added to the invoice without your sign-off."
+  tos: "Workmanship warranted for 1 year; manufacturer warranties pass through. Full terms of service available on request."
 
 fallback_email: ""

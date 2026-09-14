@@ -34,7 +34,7 @@ PACKAGES = [
     "review-responder",
     "invoice-chaser",
     "quote-follower",
-    "meeting-prep",
+    "weekly-brief",
     "quote-builder",
     "photo-marketer",
 ]
