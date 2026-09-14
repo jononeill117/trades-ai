@@ -10,6 +10,9 @@ Post 3:
 New: progressive trust. Everything starts human-gated; as you approve its work, the system proposes earned autonomy per action type — you grant or revoke. Mock mode runs all 9 with zero keys.
 
 Post 4:
+How it was built: @devin from @cognitjon did the coding AND the QA. @muse is the orchestrator and overseer — specs, verification, shipping. Agents write the code, agents check the code, one brain keeps the whole thing honest.
+
+Post 5:
 https://github.com/jononeill117/trades-ai
 
 cc @harrychow_ — my entry for the Pinetree Research SWE contest.
