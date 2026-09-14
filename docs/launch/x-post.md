@@ -1,13 +1,11 @@
-# X post — DRAFT (do not publish)
+# X post — DRAFT (Jon posts this himself)
 
-trades-ai: an open-source toolkit of 9 AI automations for home-service
-trades, built on @getsolari cloud browsers, sandboxed microVMs, and
-desktops.
+Built trades-ai: 9 open-source AI automations for home-service trades, running on @getsolari cloud browsers + sandboxes.
 
-Missed-call textback that books the job. Invoice chasing. Review
-responses. Quote follow-ups. All gated by human approval, all audited.
+Missed-call textback that actually books the job (3 real jobs booked live). Invoice chasing, review replies, quote follow-ups — every customer-facing message waits for human approval first.
 
-Runs free in mock mode — zero keys.
+Mock mode runs all 9 with zero keys.
+
 https://github.com/jononeill117/trades-ai
 
-cc @harrychow_ — entry for the Pinetree Research SWE contest.
+cc @harrychow_ — my entry for the Pinetree Research SWE contest.
