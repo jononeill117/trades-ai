@@ -171,10 +171,12 @@ Replay manifest: [docs/demo/replays.json](docs/demo/replays.json).
   with a logged reason because no real review platform is configured.
 - **quote-follower** — fixture list URL detected; fell back to CSV source
   in live mode rather than scraping a fake domain.
-- **weekly-brief, quote-builder, photo-marketer** — real sandbox runs
-  (weekly-brief and quote-builder in their current form were run in mock;
-  their predecessors ran live sandboxes on 2026-09-13); photo publish
-  boundary not exercised (fixture composer URL).
+- **weekly-brief** — week's exports aggregated in a real sandbox; brief
+  rendered, Slack notify skipped (no webhook configured).
+- **quote-builder** — history-band pricing computed in a real sandbox;
+  quote delivered after a CLI approval.
+- **photo-marketer** — real sandbox run; publish boundary not exercised
+  (fixture composer URL).
 
 **Replays.** Replays on this account have been unreliable — most sessions
 return `ReplayUnavailable` (404, non-retryable) even after polling. One
