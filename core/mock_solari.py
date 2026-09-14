@@ -162,6 +162,11 @@ class MockSolari:
         self._base_url = base_url
         self.sessions: list[str] = []
 
+    def use_pages(self, pages: dict[str, str]) -> None:
+        """Serve fixture HTML through browser() — the mock-only boundary.
+        Keys are URL substrings; FixtureDriver matches 'key in url'."""
+        self._pages = pages
+
     async def browser(self, *, profile_name=None, recording=True, stealth=False, proxy=None, captcha=False):
         session = MockSession("browser")
         self.sessions.append(session.id)

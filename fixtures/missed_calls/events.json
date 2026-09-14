@@ -1,0 +1,30 @@
+[
+  {
+    "id": "call-0001",
+    "from": "+15555550142",
+    "ts": "2026-09-13T08:14:22",
+    "caller_name": "Rosa Delgado",
+    "voicemail_transcript": "Hi, my water heater is leaking all over the garage floor. Can someone come out today? It's the one in the corner by the door."
+  },
+  {
+    "id": "call-0002",
+    "from": "+15555550187",
+    "ts": "2026-09-13T08:41:05",
+    "caller_name": "Sam Okafor",
+    "voicemail_transcript": "Hey, looking to get a quote on installing two ceiling fans and a new outlet in the back bedroom."
+  },
+  {
+    "id": "call-0003",
+    "from": "+15555550119",
+    "ts": "2026-09-13T09:02:51",
+    "caller_name": "",
+    "voicemail_transcript": "There's a gas smell near the furnace in the basement, please call me back right away."
+  },
+  {
+    "id": "call-0004",
+    "from": "+15555550233",
+    "ts": "2026-09-13T09:27:40",
+    "caller_name": "Bea Lindqvist",
+    "voicemail_transcript": "The AC quit overnight and the house is already 84 degrees. Unit's about 6 years old."
+  }
+]

@@ -1,0 +1,14 @@
+<!doctype html>
+<!-- Fictional review-management page for mock mode — a stand-in for the
+     "reply to this review" form on a business-profile platform. -->
+<html><head><title>Reviews — reply</title></head><body>
+<h1>Business profile — reviews</h1>
+<div class="review" data-review-id="rev-101">
+  <span class="stars">5</span>
+  <p class="review-text">Tech showed up on time...</p>
+  <form method="post" action="/reviews/rev-101/reply">
+    <textarea name="reply" id="reply-text"></textarea>
+    <button type="submit" id="reply-submit">Publish reply</button>
+  </form>
+</div>
+</body></html>

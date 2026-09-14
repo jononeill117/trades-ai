@@ -1,0 +1,7 @@
+invoice_id,customer,email,phone,amount,issued,due,status
+INV-2201,Harborside Cafe,j.meyer@harborside.example,+15555550310,1840.00,2026-07-20,2026-08-19,open
+INV-2202,Quentin Ashford,q.ashford@example.com,+15555550311,312.50,2026-08-25,2026-09-09,open
+INV-2203,Beaumont Apartments,ap@beaumont.example,+15555550312,5275.00,2026-06-15,2026-07-15,open
+INV-2204,Willa Park,wpark@example.com,+15555550313,940.00,2026-09-01,2026-09-11,open
+INV-2205,Cranston & Sons,billing@cranston.example,+15555550314,2210.75,2026-05-30,2026-06-29,disputed
+INV-2206,Theo Marchetti,,,675.00,2026-08-30,2026-09-10,open

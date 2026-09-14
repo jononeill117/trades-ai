@@ -1,0 +1,9 @@
+{
+  "job_id": "EST-501",
+  "customer": "Marta Rivera",
+  "email": "marta.rivera@example.com",
+  "site": "18 Birchwood Ln",
+  "description": "Customer wants a 50 gallon gas water heater replaced. Existing unit is 12 years old and leaking at the base. Also asked about adding an expansion tank since the inspector mentioned it last year. Haul away the old unit.",
+  "photos": ["photos/est-501-before.png", "photos/est-501-tag.png"],
+  "quantities": {"WH-50-NG": 1, "WH-EXP-TANK": 1}
+}

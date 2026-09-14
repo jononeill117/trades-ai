@@ -56,3 +56,20 @@ The intended auth pattern — no credentials in the repo, ever:
 
 Config keys `portal_profile` / `suppliers.<name>.profile` name the profile
 each adapter should attach.
+
+## The wider contract
+
+Adapters sit inside packages, and packages have rules too — see "The
+package contract" in `docs/architecture.md`. The ones that bite adapter
+authors most:
+
+- If the adapter's action is customer-facing or external (posting a
+  review reply, submitting a quote, publishing a social post), the
+  *orchestrator* gates it via `gate.require(...)` before calling the
+  adapter — adapters themselves stay ungated so they remain testable.
+- Adapters must work through `PageDriver` only. If a step truly cannot
+  run in a browser, raise `NeedsDesktopError` rather than reaching for
+  Playwright internals.
+- Fixture domains (`*.example`) mean "no real target configured." In
+  live mode packages detect this and log a skip — never fake a real
+  post against a fixture page.

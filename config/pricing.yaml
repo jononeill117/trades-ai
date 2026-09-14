@@ -1,0 +1,16 @@
+# Pricing assumptions for cost-per-run estimates.
+#
+# These are ASSUMPTIONS, not quotes. Solari pricing can change — verify
+# against the official docs before relying on an estimate. A rate of null
+# means "unknown": runs report measured usage and mark the estimate
+# `unavailable` rather than inventing a number.
+#
+# Units: USD per session-minute, per primitive.
+currency: USD
+
+rates_per_minute:
+  browser: null    # e.g. 0.05 — set from your plan's actual rate
+  sandbox: null    # e.g. 0.02
+  desktop: null    # e.g. 0.10
+
+note: "Rates unset — runs log measured usage only, estimates report 'unavailable'."

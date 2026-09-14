@@ -1,0 +1,48 @@
+name: selector-health
+
+# Nightly mock-mode selector checks — no credentials, no external calls.
+# Live checks are opt-in: the live job only runs when the SOLARI_API_KEY
+# secret exists (workflow_dispatch or a schedule on a fork that set it).
+
+on:
+  schedule:
+    - cron: "17 6 * * *"   # nightly
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  mock-healthcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python healthcheck.py --json out/health.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: health-report
+          path: out/health.json
+
+  live-healthcheck:
+    # Opt-in: only runs when the secret is configured AND the run was
+    # triggered manually (real targets, real credentials — never automatic).
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      SOLARI_API_KEY: ${{ secrets.SOLARI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python healthcheck.py --live --json out/health-live.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: health-report-live
+          path: out/health-live.json

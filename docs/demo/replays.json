@@ -1,0 +1,105 @@
+{
+  "dispatch": {
+    "run_log": "dispatch-20260913-220715-93d0d1.jsonl",
+    "browser_sessions": 2,
+    "replays": [
+      {
+        "session_id": "Au-BnCRJvcnD17fkFy1Kq3bI74Aeend0kYIF3Dw6DBtOSCIEqHv_elRVzvBKKrNz5oFJKMhCC0seO2FQ6oriOC-FsZZiSoWJFkRuNU504CwfXvbKKl9_salwur_XFtJvgQvufNpxHx-80dELsmy9mou85pw4GLEAv0qdHxSgngSV0QR6aH5DyBB--gA7h-_jeNKJMEcz.b-4BYNT4RiEveWiLfX-4ZQ",
+        "replay_url": null,
+        "artifact": null,
+        "replay_url_error": "SolariError: Solari GET /sessions/Au-BnCRJvcnD17fkFy1Kq3bI74Aeend0kYIF3Dw6DBtOSCIEqHv_elRVzvBKKrNz5oFJKMhCC0seO2FQ6oriOC-FsZZiSoWJFkRuNU504CwfXvbKKl9_salwur_XFtJvgQvufNpxHx-80dELsmy9mou85pw4GLEAv0qdHxSgngSV0QR6aH5DyBB--gA7h-_jeNKJMEcz.b-4BYNT4RiEveWiLfX-4ZQ/replay-url failed: 404 {\"error\":\"No replay available for this session\",\"code\":\"ReplayUnavailable\",\"retryable\":false,\"sessionId\":\"Au-BnCRJvcnD17fkFy1Kq3bI74Aeend0kYIF3Dw6DBtOSCIEqHv_elRVzvBKKrNz5oFJKMhCC0seO2FQ6oriOC-FsZZiSoWJFkRuNU504CwfXvbKKl9_salwur_XFtJvgQvufNpxHx-80dELsmy9mou85pw4GLEAv0qdHxSgngSV0QR6aH5DyBB--gA7h-_jeNKJMEcz.b-4BYNT4RiEveWiLfX-4ZQ\"} (status=404)",
+        "status": "unavailable_or_pending"
+      },
+      {
+        "session_id": "Ak-hipHCWBbUX__sarvSEQVoYc8yNzfeiIET8EhBa8Nh_zPPhFr6z_r8GBhPOB_FcwwFsvKEiUrsvqM118cngSq8z0QCiEn8O9jPoU44t1RGGG5RXCyrRoEFmJKQ0X41ssiZbBf9eBwNmvwYHWAZp5y1tBIQkBSaBwrqGagWmFJj4P2wzJcMtqWCAJVHGGEAEK9_h0Pg.WPbphEyx0IionxeRCU0M8Q",
+        "replay_url": null,
+        "artifact": null,
+        "replay_url_error": "SolariError: Solari GET /sessions/Ak-hipHCWBbUX__sarvSEQVoYc8yNzfeiIET8EhBa8Nh_zPPhFr6z_r8GBhPOB_FcwwFsvKEiUrsvqM118cngSq8z0QCiEn8O9jPoU44t1RGGG5RXCyrRoEFmJKQ0X41ssiZbBf9eBwNmvwYHWAZp5y1tBIQkBSaBwrqGagWmFJj4P2wzJcMtqWCAJVHGGEAEK9_h0Pg.WPbphEyx0IionxeRCU0M8Q/replay-url failed: 404 {\"error\":\"No replay available for this session\",\"code\":\"ReplayUnavailable\",\"retryable\":false,\"sessionId\":\"Ak-hipHCWBbUX__sarvSEQVoYc8yNzfeiIET8EhBa8Nh_zPPhFr6z_r8GBhPOB_FcwwFsvKEiUrsvqM118cngSq8z0QCiEn8O9jPoU44t1RGGG5RXCyrRoEFmJKQ0X41ssiZbBf9eBwNmvwYHWAZp5y1tBIQkBSaBwrqGagWmFJj4P2wzJcMtqWCAJVHGGEAEK9_h0Pg.WPbphEyx0IionxeRCU0M8Q\"} (status=404)",
+        "status": "unavailable_or_pending"
+      }
+    ]
+  },
+  "invoice-chaser": {
+    "run_log": "invoice-chaser-20260913-170912-5ee081.jsonl",
+    "browser_sessions": 0,
+    "replays": []
+  },
+  "meeting-prep": {
+    "run_log": "meeting-prep-20260913-170920-505679.jsonl",
+    "browser_sessions": 0,
+    "replays": []
+  },
+  "missed-call-textback": {
+    "run_log": "missed-call-textback-20260913-170846-04d387.jsonl",
+    "browser_sessions": 3,
+    "replays": [
+      {
+        "session_id": "Agt64NzCyInE58P9oLzVQ2FAtoIMtPDNkC18CY2dtBK8TxHOq6rmx4TTbaNirUIZpEgenbVCnkKxmqjRrC9cQsCUA5RC_3o9Vnwu08BZyqaqnl5_i1brO-jH6ss879fWeF2yUit4Sss7a8h5TA2xcqrjYkIg6-dRbdM3NHxuNzA0jV8oAcHgp2lh8tQTRZdhwtfuN3Bx.UY9Z7VAtJd5WOeqw8zvcuw",
+        "replay_url": null,
+        "artifact": null,
+        "replay_url_error": "SolariError: Solari GET /sessions/Agt64NzCyInE58P9oLzVQ2FAtoIMtPDNkC18CY2dtBK8TxHOq6rmx4TTbaNirUIZpEgenbVCnkKxmqjRrC9cQsCUA5RC_3o9Vnwu08BZyqaqnl5_i1brO-jH6ss879fWeF2yUit4Sss7a8h5TA2xcqrjYkIg6-dRbdM3NHxuNzA0jV8oAcHgp2lh8tQTRZdhwtfuN3Bx.UY9Z7VAtJd5WOeqw8zvcuw/replay-url failed: 404 {\"error\":\"No replay available for this session\",\"code\":\"ReplayUnavailable\",\"retryable\":false,\"sessionId\":\"Agt64NzCyInE58P9oLzVQ2FAtoIMtPDNkC18CY2dtBK8TxHOq6rmx4TTbaNirUIZpEgenbVCnkKxmqjRrC9cQsCUA5RC_3o9Vnwu08BZyqaqnl5_i1brO-jH6ss879fWeF2yUit4Sss7a8h5TA2xcqrjYkIg6-dRbdM3NHxuNzA0jV8oAcHgp2lh8tQTRZdhwtfuN3Bx.UY9Z7VAtJd5WOeqw8zvcuw\"} (status=404)",
+        "status": "unavailable_or_pending"
+      },
+      {
+        "session_id": "AlnEYVucsTVCREJH-s_HNek0kvWkPk89vr-QCPR3exabRbaoZ6CowrlZz_oihVd4gyNyXxUrmqDwcBbyit-NNOkCNMmfkqIISh2fUkLRxglLmQMTypoMjjMLPTF6bMndaJw2CjDZ-vqGLQaP0Rbnq5cGpJwSR8y3DoMGaum4X_1RdW7wKa1nXpPkq8Sq_gIgizRkhgZB.gP3us4pTa9ahVwxMXb2upA",
+        "replay_url": null,
+        "artifact": null,
+        "replay_url_error": "SolariError: Solari GET /sessions/AlnEYVucsTVCREJH-s_HNek0kvWkPk89vr-QCPR3exabRbaoZ6CowrlZz_oihVd4gyNyXxUrmqDwcBbyit-NNOkCNMmfkqIISh2fUkLRxglLmQMTypoMjjMLPTF6bMndaJw2CjDZ-vqGLQaP0Rbnq5cGpJwSR8y3DoMGaum4X_1RdW7wKa1nXpPkq8Sq_gIgizRkhgZB.gP3us4pTa9ahVwxMXb2upA/replay-url failed: 404 {\"error\":\"No replay available for this session\",\"code\":\"ReplayUnavailable\",\"retryable\":false,\"sessionId\":\"AlnEYVucsTVCREJH-s_HNek0kvWkPk89vr-QCPR3exabRbaoZ6CowrlZz_oihVd4gyNyXxUrmqDwcBbyit-NNOkCNMmfkqIISh2fUkLRxglLmQMTypoMjjMLPTF6bMndaJw2CjDZ-vqGLQaP0Rbnq5cGpJwSR8y3DoMGaum4X_1RdW7wKa1nXpPkq8Sq_gIgizRkhgZB.gP3us4pTa9ahVwxMXb2upA\"} (status=404)",
+        "status": "unavailable_or_pending"
+      },
+      {
+        "session_id": "Amp_9rEjWTPezuwVsI0A3N4BoFbk74o-CsGkNSdLV7GkQYf5C8fK0tHbJPEcqmJQ2pq4B3xlNGaujkygrNvFe6Fy6FtsPq3ePYy-V26UlyvSbBEEfc_PHpNtDtpKM3e3Rr0a3n53ppr9hD-7qId5zxuYV3L6UaqZFMLe4rgfX60Gfg4G0DAkB7FRf6EHE43KMpwTAuMz.0bwB6KXjeOcOXgtyhwShJQ",
+        "replay_url": null,
+        "artifact": null,
+        "replay_url_error": "SolariError: Solari GET /sessions/Amp_9rEjWTPezuwVsI0A3N4BoFbk74o-CsGkNSdLV7GkQYf5C8fK0tHbJPEcqmJQ2pq4B3xlNGaujkygrNvFe6Fy6FtsPq3ePYy-V26UlyvSbBEEfc_PHpNtDtpKM3e3Rr0a3n53ppr9hD-7qId5zxuYV3L6UaqZFMLe4rgfX60Gfg4G0DAkB7FRf6EHE43KMpwTAuMz.0bwB6KXjeOcOXgtyhwShJQ/replay-url failed: 404 {\"error\":\"No replay available for this session\",\"code\":\"ReplayUnavailable\",\"retryable\":false,\"sessionId\":\"Amp_9rEjWTPezuwVsI0A3N4BoFbk74o-CsGkNSdLV7GkQYf5C8fK0tHbJPEcqmJQ2pq4B3xlNGaujkygrNvFe6Fy6FtsPq3ePYy-V26UlyvSbBEEfc_PHpNtDtpKM3e3Rr0a3n53ppr9hD-7qId5zxuYV3L6UaqZFMLe4rgfX60Gfg4G0DAkB7FRf6EHE43KMpwTAuMz.0bwB6KXjeOcOXgtyhwShJQ\"} (status=404)",
+        "status": "unavailable_or_pending"
+      }
+    ]
+  },
+  "photo-marketer": {
+    "run_log": "photo-marketer-20260913-170934-ef772e.jsonl",
+    "browser_sessions": 0,
+    "replays": []
+  },
+  "procurement": {
+    "run_log": "procurement-20260913-220759-b37732.jsonl",
+    "browser_sessions": 3,
+    "replays": [
+      {
+        "session_id": "AllNVFxEc5WzVgQxftBWBRFbPJSO8L-9v2M1b5A7S1iRy5fkkVSWnR3Yu-EbapGf-u-iQpzzOnUtmUq49e2kaD7pRXGfwqLI33aVjjYBYJniz3Z1rFzXuX7JGklntZS6-qrv7IswLp53i8sIIAGapGknb4AlJNR7ECGYWjuXiDhgFWAtOc8pwjgFNjt8eqiJo3I5YZie.LBIFbCgx2pZ20NAOM2cAJQ",
+        "replay_url": null,
+        "artifact": null,
+        "replay_url_error": "SolariError: Solari GET /sessions/AllNVFxEc5WzVgQxftBWBRFbPJSO8L-9v2M1b5A7S1iRy5fkkVSWnR3Yu-EbapGf-u-iQpzzOnUtmUq49e2kaD7pRXGfwqLI33aVjjYBYJniz3Z1rFzXuX7JGklntZS6-qrv7IswLp53i8sIIAGapGknb4AlJNR7ECGYWjuXiDhgFWAtOc8pwjgFNjt8eqiJo3I5YZie.LBIFbCgx2pZ20NAOM2cAJQ/replay-url failed: 404 {\"error\":\"No replay available for this session\",\"code\":\"ReplayUnavailable\",\"retryable\":false,\"sessionId\":\"AllNVFxEc5WzVgQxftBWBRFbPJSO8L-9v2M1b5A7S1iRy5fkkVSWnR3Yu-EbapGf-u-iQpzzOnUtmUq49e2kaD7pRXGfwqLI33aVjjYBYJniz3Z1rFzXuX7JGklntZS6-qrv7IswLp53i8sIIAGapGknb4AlJNR7ECGYWjuXiDhgFWAtOc8pwjgFNjt8eqiJo3I5YZie.LBIFbCgx2pZ20NAOM2cAJQ\"} (status=404)",
+        "status": "unavailable_or_pending"
+      },
+      {
+        "session_id": "Aj8-Z4g-hu2asgtfMrvHyq9dof_-ldzdrmFkUXRL66ZqpzhT1KVkg7m5jGno-YXL_Mu9YfaUJIK6ENCwRVr2YVvoOf5cniGCDe_53DufPPa-OH1Hf__z33o-kKY0ryQYSbb3FGO5vq8fXnYnDCo9pAlc2ScYDC_InIQL_8Ow8Qr5PauDMRS_AL1AZ-eGBHUfkaLMicmQ.y-FLL7kaTUikngMP2DNNAg",
+        "replay_url": "https://storage.googleapis.com/solari-prod-replays-j489006/ca645813-7b77-4fa1-be0e-088c1023eb35.ndjson.gz?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=solari-prod-console%40james-489006.iam.gserviceaccount.com%2F20260914%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260914T001704Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=619da92809e9cdd7f274e438d6bd0ee9c767071353e51e6ee979156b00c31280e6642b7a13462649ba4de23e44fa5d95224629bd84408d5ea191089676821bb0e1e04d1e330c033d4a970fe89b553494ebe966643b7a00b748ced0a3c412797d2148fc9418364630f360a3da34b2e63a2b827ca18278c7f11d69f38ea5828ca82af78df05e094b9cca7ad80d60f02162af4d4be29b062af13673d4bde47ce4410f354581a7d5bbe4c3adc578b951845899dd9f9e71903644f3cd5441ca860ea4ffd80d580ee5cea58d2ad282f8494f0f14e67e3e3bec8729b849f41b1abed361ca29a0c0130bc6d7fafb3142476b7850d553dd07bddb638aeb76b80789f03a4d",
+        "artifact": "Aj8-Z4g-hu2asgtfMrvHyq9dof_-ldzdrmFkUXRL66ZqpzhT1KVkg7m5jGno-YXL_Mu9YfaUJIK6ENCwRVr2YVvoOf5cniGCDe_53DufPPa-OH1Hf__z33o-kKY0ryQYSbb3FGO5vq8fXnYnDCo9pAlc2ScYDC_InIQL_8Ow8Qr5PauDMRS_AL1AZ-eGBHUfkaLMicmQ.y-FLL7kaTUikngMP2DNNAg.replay.ndjson",
+        "status": "captured"
+      },
+      {
+        "session_id": "AsIAe9Zt77s73vLaUMqWURWmDrN_ku3J_yHMxhIzhUoqFWvSUKISlv1vH6L2hZsQUdFyGYPamhb1t4PO9BrrXEGxH2lmns5zgqIFLW3RFlmWXuFtDF5JcWyNa4_Nc6lh-yiKbN9bZiWITxdS5cqrF3xQ2WzU5m7INqivZSvEgz7TWLsJolkZJretq-d48rMLZJQcbwMf.K9MX7PMPzw7KrYOnykGZsg",
+        "replay_url": null,
+        "artifact": null,
+        "replay_url_error": "SolariError: Solari GET /sessions/AsIAe9Zt77s73vLaUMqWURWmDrN_ku3J_yHMxhIzhUoqFWvSUKISlv1vH6L2hZsQUdFyGYPamhb1t4PO9BrrXEGxH2lmns5zgqIFLW3RFlmWXuFtDF5JcWyNa4_Nc6lh-yiKbN9bZiWITxdS5cqrF3xQ2WzU5m7INqivZSvEgz7TWLsJolkZJretq-d48rMLZJQcbwMf.K9MX7PMPzw7KrYOnykGZsg/replay-url failed: 404 {\"error\":\"No replay available for this session\",\"code\":\"ReplayUnavailable\",\"retryable\":false,\"sessionId\":\"AsIAe9Zt77s73vLaUMqWURWmDrN_ku3J_yHMxhIzhUoqFWvSUKISlv1vH6L2hZsQUdFyGYPamhb1t4PO9BrrXEGxH2lmns5zgqIFLW3RFlmWXuFtDF5JcWyNa4_Nc6lh-yiKbN9bZiWITxdS5cqrF3xQ2WzU5m7INqivZSvEgz7TWLsJolkZJretq-d48rMLZJQcbwMf.K9MX7PMPzw7KrYOnykGZsg\"} (status=404)",
+        "status": "unavailable_or_pending"
+      }
+    ]
+  },
+  "quote-builder": {
+    "run_log": "quote-builder-20260913-170926-b8c77c.jsonl",
+    "browser_sessions": 0,
+    "replays": []
+  },
+  "quote-follower": {
+    "run_log": "quote-follower-20260913-170917-8b417d.jsonl",
+    "browser_sessions": 0,
+    "replays": []
+  },
+  "review-responder": {
+    "run_log": "review-responder-20260913-170906-2ead24.jsonl",
+    "browser_sessions": 0,
+    "replays": []
+  }
+}

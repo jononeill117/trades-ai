@@ -18,6 +18,7 @@ pattern (and the audit trail) is the part that matters here.
 from __future__ import annotations
 
 import asyncio
+import time
 
 from core.drivers import HttpDriver
 
@@ -39,6 +40,7 @@ async def confirm_on_dispatch_board(core, run_log, board_url: str, portal_base_u
     run_log.session("desktop", desk.sessionId,
                     replay_url=getattr(desk, "recordingUrl", None),
                     stream_url=getattr(desk, "streamUrl", None))
+    desk_t0 = time.monotonic()
     try:
         # Mock desktop (no real screen): log the computer-use steps, then make
         # the state change real by driving the board over plain HTTP.
@@ -70,6 +72,7 @@ async def confirm_on_dispatch_board(core, run_log, board_url: str, portal_base_u
         return "booked (unverified — check the recording)"
     finally:
         await core.destroy_desktop(desk)
+        run_log.usage("desktop", desk.sessionId, time.monotonic() - desk_t0)
 
 
 async def _confirm_over_http(board_url: str, portal_base_url: str) -> str:

@@ -1,0 +1,20 @@
+# Quote builder configuration.
+
+# The pricebook is configuration, not model knowledge — stable item IDs,
+# descriptions, unit prices, taxability. Edit this for YOUR shop.
+pricebook: fixtures/pricebook/pricebook.csv
+
+# The job to quote: details + photo paths + optional explicit quantities.
+job: fixtures/quote_jobs/job-rivera.json
+
+# Applied to taxable line items only. 0 = no tax.
+tax_rate: 0.07
+
+# Printed on the quote.
+assumptions:
+  - "Standard install access; no code upgrades unless listed"
+exclusions:
+  - "Permits unless listed"
+  - "Drywall/paint repair"
+
+fallback_email: ""

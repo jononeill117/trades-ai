@@ -11,6 +11,7 @@ extraction code runs either way.
 from __future__ import annotations
 
 import asyncio
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -48,11 +49,13 @@ async def _fetch_supplier_live(core, supplier: SupplierAdapter, parts: list[Part
         proxy="us" if stealth else None, captcha=stealth,
     )
     run_log.session("browser", session.id)
+    t0 = time.monotonic()
     try:
         driver = as_driver(page)
         return [await supplier.fetch_offer(driver, p) for p in parts]
     finally:
         await session.close()
+        run_log.usage("browser", session.id, time.monotonic() - t0)
         run_log.session("browser", session.id, replay_url=await core.replay_url(session.id))
 
 

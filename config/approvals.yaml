@@ -1,0 +1,24 @@
+# Approval gate — every customer-facing outbound action (email, SMS, review
+# reply, quote delivery, social post) waits here for a human decision.
+#
+# backend: auto | mock | cli | slack
+#   auto  — mock backend in --mock mode, cli in --live mode (default)
+#   mock  — prints the exact request, decides per mock_decision
+#   cli   — terminal y/n prompt
+#   slack — posts to SLACK_WEBHOOK_URL, waits for a decision file
+#           (see core/approvals.py for the file-drop contract)
+backend: auto
+
+# Mock mode decision: approve (default, demos flow end to end) or deny
+# (to exercise the fail-closed path).
+mock_decision: approve
+
+# Slack backend: seconds to wait for a decision file before denying.
+slack_timeout_s: 300
+
+# Actions listed here skip the human decision — for deployers who have
+# pre-approved a fixed transactional template where that is legally
+# appropriate (e.g. "we missed your call" text-back). The request and the
+# pre-approved decision are still logged. Keep this list empty unless you
+# have reviewed the legal requirements for unattended customer messaging.
+preapproved_actions: []

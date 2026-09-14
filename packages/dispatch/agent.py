@@ -11,6 +11,7 @@ pipeline is identical, only where the machines live changes.
 from __future__ import annotations
 
 import tempfile
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -54,7 +55,7 @@ async def _portal_url(core, cfg: dict, run_log: RunLog) -> tuple[str, object | N
             run_log.session("sandbox", sbx.sandboxId)
             url = await mock_portal_server.serve_in_sandbox(sbx, seed)
             run_log.step("portal_up", url=url)
-            return url, sbx
+            return url, (sbx, time.monotonic())
         server, url = mock_portal_server.serve(seed)
         run_log.step("portal_up", url=url)
         return url, server
@@ -91,7 +92,9 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                 tmp.close()
                 eml_path = Path(tmp.name)
 
+            t0 = time.monotonic()
             order: WorkOrder = await parse_email_in_sandbox(core, eml_path)
+            run_log.usage("sandbox", f"parse:{order.source_id}", time.monotonic() - t0)
             entry["order"] = order.to_dict()
             run_log.step("parse", source_id=order.source_id, trade=order.trade,
                          priority=order.priority, warnings=order.warnings)
@@ -129,6 +132,7 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             )
             run_log.session("browser", session.id)
             needs_desktop = False
+            browser_t0 = time.monotonic()
             try:
                 driver = as_driver(page)
                 signed_in = await adapter.login(driver)
@@ -146,6 +150,7 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                 entry["status"] = status
             finally:
                 await session.close()
+                run_log.usage("browser", session.id, time.monotonic() - browser_t0)
                 replay = await core.replay_url(session.id)
                 run_log.session("browser", session.id, replay_url=replay)
                 entry["replay_url"] = replay
@@ -193,8 +198,11 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
         return results
     finally:
         if keepalive is not None:
-            # sandbox that hosts the live mock portal — kill() destroys the VM
-            if hasattr(keepalive, "kill"):
-                await keepalive.kill()
+            # live mode: (sandbox, started_at) hosting the mock portal —
+            # kill() destroys the VM; mock mode: a local HTTP server.
+            if isinstance(keepalive, tuple):
+                sbx, t0 = keepalive
+                await sbx.kill()
+                run_log.usage("sandbox", sbx.sandboxId, time.monotonic() - t0)
             else:
                 keepalive.shutdown()

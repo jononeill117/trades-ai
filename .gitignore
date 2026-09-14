@@ -18,3 +18,5 @@ out/*.html
 
 # OS noise
 .DS_Store
+out/approvals/
+out/*_state.json

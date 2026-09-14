@@ -1,0 +1,22 @@
+# Missed-call textback configuration.
+
+# Missed-call events: JSON list of {id, from, ts, caller_name,
+# voicemail_transcript}. Live deployments point this at their phone system
+# (Quo webhook -> this shape); the bundled fixture is fictional.
+events: fixtures/missed_calls/events.json
+
+# First text a caller gets. {shop} is substituted from shop_name.
+textback_template: "Sorry we missed your call — this is {shop}. Reply with what you need and we'll get you scheduled."
+shop_name: "Your Shop"
+
+# Booking target: "mock" (bundled FieldDesk portal) or a community adapter.
+portal: mock
+portal_base_url: ""
+portal_profile: "trades-textback"
+portal_seed: fixtures/mock_portal/seed.json
+
+# Used when the caller didn't leave an address.
+default_site: "Address TBD — confirm with customer"
+
+# Technician availability (shared with dispatch).
+availability: config/dispatch.availability.yaml

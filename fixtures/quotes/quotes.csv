@@ -1,0 +1,6 @@
+quote_id,customer,email,phone,amount,created,status,last_activity
+Q-3011,Delmar Foods,ap@delmarfoods.example,+15555550420,3850.00,2026-08-28,sent,2026-08-28
+Q-3012,Alicia Rowe,alicia.rowe@example.com,+15555550421,1275.50,2026-09-02,draft,
+Q-3013,Northgate Dental,office@northgate.example,+15555550422,8900.00,2026-08-20,sent,2026-08-21
+Q-3014,Bert Hollis,,+15555550423,460.00,2026-09-08,draft,
+Q-3015,Sunrise Bakery,hello@sunrisebakery.example,,2340.25,2026-09-05,sent,2026-09-10

@@ -1,0 +1,26 @@
+# Review responder configuration.
+
+# Reviews source: bundled fictional fixture, or your own export.
+reviews: fixtures/reviews/reviews.json
+
+# Publishing target. Leave base_url empty for the fixture-backed demo portal;
+# set it to your review platform's business console for live mode.
+portal_base_url: ""
+profile: "trades-reviews"      # Solari browser profile holding your login
+selectors: {}                   # override reply.text / reply.submit here
+
+# Reply drafting. provider: template (deterministic, default). Implement the
+# ReplyProvider interface in draft.py to plug in a model.
+drafting:
+  provider: template
+
+# Owner voice — how the shop sounds. Templates may use {author}, {praise},
+# {acknowledge}, {contact}, {signoff}.
+voice:
+  signoff: "— the crew at your shop"
+  contact: "the office line"
+  praise_line: "glad the work held up"
+  acknowledge_line: "and noted on the scheduling hiccup"
+  templates: {}                 # override "5", "4", "low" templates here
+
+digest_email: ""                # weekly digest recipient (Gmail must be set)

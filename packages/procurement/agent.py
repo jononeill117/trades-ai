@@ -7,6 +7,7 @@ Pipeline:
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 from core.audit import RunLog
@@ -46,7 +47,9 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
 
     # -- aggregate (sandbox boundary) -------------------------------------------
     baseline = cfg.get("baseline_supplier", "ferguson")
+    t0 = time.monotonic()
     quote = await aggregate_in_sandbox(core, parts, offers, baseline)
+    run_log.usage("sandbox", "aggregate", time.monotonic() - t0)
     run_log.step("aggregate", total=quote["total"], savings=quote["savings"])
 
     # -- report ------------------------------------------------------------------

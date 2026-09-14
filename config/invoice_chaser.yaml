@@ -1,0 +1,34 @@
+# Invoice chaser configuration.
+
+# The AR aging export (CSV): invoice_id,customer,email,phone,amount,issued,due,status
+aging_csv: fixtures/ar/aging.csv
+
+# Supplied payment/status events — the ONLY thing that can mark an invoice
+# paid/disputed/promised. Point at your accounting system's export.
+payments: fixtures/ar/payments.json
+
+shop_name: "Your Shop"
+
+# Reminder sequence: one entry per touch. after_days = days past due at which
+# this step becomes due; channel = email|sms (falls back to whichever contact
+# channel exists); tone is carried into the approval request.
+sequence:
+  - after_days: 1
+    tone: friendly
+    channel: email
+    subject: "Invoice {invoice_id} — friendly reminder"
+    body: "Hi {name}, just a nudge that invoice {invoice_id} for ${amount} came due {due}. Happy to resend it or answer questions. — {shop}"
+  - after_days: 7
+    tone: firm
+    channel: email
+    subject: "Invoice {invoice_id} — now {days} days past due"
+    body: "Hi {name}, invoice {invoice_id} for ${amount} is now {days} days past due. Please let us know if there's a problem — otherwise we'd appreciate payment this week. — {shop}"
+  - after_days: 14
+    tone: final
+    channel: sms
+    subject: "Invoice {invoice_id} — final notice"
+    body: "{shop}: invoice {invoice_id} (${amount}) is {days} days past due. Please call us today to avoid escalation."
+
+# After the whole sequence is sent AND the invoice is this many days overdue,
+# flag it for a human (Slack) instead of sending more.
+escalate_after_days: 30

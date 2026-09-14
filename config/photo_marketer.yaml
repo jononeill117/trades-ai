@@ -1,0 +1,26 @@
+# Photo marketer configuration.
+
+# Root folder of before/after job folders. One subfolder per job.
+photos: fixtures/photos
+
+# Platforms to queue posts for. Each gets its own caption variant and its own
+# approval request — nothing is duplicated or auto-published.
+platforms: [gbp, facebook, instagram]
+
+# Publish target: the platform composer URL + a Solari profile with your
+# logged-in sessions.
+composer_url: "https://social.example/compose"
+profile: "trades-social"
+
+# Minimum usable photo dimensions (WxH). Smaller images are scored unusable.
+min_dimensions: "32x24"
+
+# Optional redaction hook: a Python file defining `redact(png_bytes)->bytes`,
+# run inside the sandbox after metadata stripping — for faces, plates,
+# addresses, paperwork. See packages/photo_marketer/redact.py.
+redaction_hook: ""
+
+shop_name: "Your Shop"
+service_area: "your service area"
+hashtags: ["#plumbing", "#hvac", "#electrical", "#skilledtrades"]
+caption_detail: ""

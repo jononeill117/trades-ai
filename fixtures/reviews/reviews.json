@@ -1,0 +1,42 @@
+[
+  {
+    "id": "rev-101",
+    "author": "Marisol V.",
+    "stars": 5,
+    "ts": "2026-09-10T15:22:00",
+    "text": "Tech showed up on time, fixed the pilot light in twenty minutes, and wore boot covers inside. First company that didn't try to upsell me.",
+    "job_ref": "JOB-0988"
+  },
+  {
+    "id": "rev-102",
+    "author": "T. Nakamura",
+    "stars": 2,
+    "ts": "2026-09-11T10:05:00",
+    "text": "Quoted one price on the phone and invoiced $180 more. Nobody warned me about the disposal fee. Work itself was fine.",
+    "job_ref": "JOB-0991"
+  },
+  {
+    "id": "rev-103",
+    "author": "Dana W.",
+    "stars": 4,
+    "ts": "2026-09-11T18:40:00",
+    "text": "Good work on the panel swap. Only complaint: scheduling took two callbacks to pin down.",
+    "job_ref": "JOB-0994"
+  },
+  {
+    "id": "rev-104",
+    "author": "Anonymous",
+    "stars": 1,
+    "ts": "2026-09-12T08:12:00",
+    "text": "Technician tracked mud through the hallway and left a panel cover off. Very disappointed.",
+    "job_ref": "JOB-0997"
+  },
+  {
+    "id": "rev-105",
+    "author": "Priya R.",
+    "stars": 5,
+    "ts": "2026-09-12T19:30:00",
+    "text": "Water heater died Friday night, they had a new one in by Saturday noon. Worth every penny.",
+    "job_ref": "JOB-1001"
+  }
+]

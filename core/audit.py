@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import repo_root
+from .cost import CostTracker
 
 
 class RunLog:
@@ -33,11 +34,39 @@ class RunLog:
         self.runs_dir = runs_dir or repo_root() / "runs"
         self.runs_dir.mkdir(parents=True, exist_ok=True)
         self.path = self.runs_dir / f"{self.run_id}.jsonl"
+        self.cost = CostTracker()
         self._emit("run_start", "ok", {"mode": mode})
 
     def step(self, name: str, status: str = "ok", **detail: Any) -> None:
         """Record a pipeline step. Prints a plain-English line too."""
         self._emit(name, status, detail)
+
+    def usage(self, kind: str, session_id: str, seconds: float) -> None:
+        """Record measured Solari usage: one session of `kind` lived for
+        `seconds`. Feeds the run's cost summary and runs/cost-report.py."""
+        rec = self.cost.record(kind, session_id, seconds)
+        self._emit("usage", "ok", rec.to_dict())
+
+    def time_session(self, kind: str, session_id: str):
+        """Context manager: emits a `usage` event with elapsed seconds when
+        the block exits — the easy way to meter a session's lifetime.
+
+            session, page = await core.browser()
+            with run_log.time_session("browser", session.id):
+                ...drive it...
+        """
+        log = self
+
+        class _Timer:
+            def __enter__(self):
+                self._start = time.monotonic()
+                return self
+
+            def __exit__(self, *exc):
+                log.usage(kind, session_id, time.monotonic() - self._start)
+                return False
+
+        return _Timer()
 
     def session(
         self,
@@ -56,6 +85,9 @@ class RunLog:
         )
 
     def finish(self, status: str = "ok", **detail: Any) -> Path:
+        summary = self.cost.summary()
+        self._emit("cost_summary", "ok", summary)
+        detail.setdefault("cost", summary)
         self._emit("run_finish", status, detail)
         return self.path
 

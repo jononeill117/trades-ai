@@ -1,0 +1,16 @@
+# Quote follower configuration.
+
+# Where the quote list comes from: "browser" (drive the FSM/CRM web UI — the
+# default, exercises the cloud-browser path) or "csv" (an exported file).
+source: browser
+quotes_csv: fixtures/quotes/quotes.csv
+
+# Browser source: the quotes-list URL and a Solari profile with your login.
+list_url: "https://quotes.example/quotes"
+profile: "trades-quotes"
+selectors: {}            # override row/cell extraction patterns here
+
+# A "sent" quote with no activity for this many days counts as idle.
+idle_days: 5
+
+shop_name: "Your Shop"

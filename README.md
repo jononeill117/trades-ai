@@ -1,60 +1,97 @@
 # trades-ai
 
-Open-source AI automations for home-service trades — plumbing, HVAC, electrical —
-built on the [Solari](https://getsolari.com) platform (cloud browsers, sandboxed
-microVMs, and full Linux desktops).
+The open-source AI automation toolkit for home-service trades — plumbing,
+HVAC, electrical — built on [Solari](https://getsolari.com) cloud browsers,
+sandboxed microVMs, and full Linux desktops.
 
-A monorepo with a shared `core/` and one package per use case. Each use case is
-a real, end-to-end pipeline: work comes in (email, a parts list), the agent does
-the clicking and the math on Solari infrastructure, and the result lands where
-the shop actually looks — Slack, email, SMS — with a recorded session for every
-machine the agent touched.
+Nine end-to-end automations over one shared `core/`. Every package is the
+same shape: work comes in (an email, a missed call, an aging report), the
+agent does the clicking and the math on Solari infrastructure, a human
+approves anything customer-facing, and the result lands where the shop
+actually looks — Slack, email, SMS — with a JSONL audit log and a recorded
+session for every machine the agent touched.
 
-**Entry for the [Pinetree Research SWE contest](https://x.com/harrychow_/status/1968397534577631408).**
+Built for builders: automation agencies, technical ops people, and
+developers who deploy this stuff for real shops. Everything here runs in
+`--mock` with zero credentials, so you can evaluate, fork, and extend
+before spending a cent.
 
-## The two use cases
+**Entry for the [Pinetree Research SWE contest](https://x.com/harrychow_/status/1968397534577631408) — open-source use of Solari.**
 
-### `packages/dispatch` — work-order email in, booked job out
-
-```
-ingest → parse (sandbox) → schedule → book (cloud browser)
-       → confirm (desktop fallback) → notify → audit
-```
-
-Reads work-order emails (bundled fixtures, or a real Gmail inbox over IMAP),
-parses them inside a Solari sandbox — untrusted input never touches the host —
-proposes a slot from your availability rules, then drives a field-service
-portal in a cloud browser to book the job. When a portal insists on a GUI-only
-step (our demo portal's "dispatch board"), the run falls back to a Solari
-desktop: a real Linux machine driven by screenshot + mouse/keyboard. Slack,
-email, and SMS notifications go out; every step lands in a JSONL run log.
-
-### `packages/procurement` — parts list in, cheapest compliant quote out
+## Architecture first
 
 ```
-load parts → price-check every supplier (parallel cloud browsers)
-           → aggregate (sandbox) → render quote → deliver
+                 ┌────────────────────────────────────────────────┐
+                 │                     core/                       │
+                 │  SolariCore ── browsers / sandboxes / desktops  │
+                 │  MockSolari ── local stand-ins for --mock       │
+                 │  RunLog ───── JSONL audit log (runs/)           │
+                 │  CostTracker ─ measured session usage + pricing │
+                 │  ApprovalGate ─ fail-closed human gates         │
+                 │  notify/ ──── Slack · Gmail · Quo SMS           │
+                 │  drivers/ ─── PageDriver over Playwright/HTTP   │
+                 └───────▲───────────────────────────▲────────────┘
+                         │                           │
+        ┌────────────────┴───────────────────────────┴───────────┐
+        │                  packages/<use-case>/                   │
+        │   async def run(core, run_log, cfg) — same pipeline     │
+        │   in mock and live; only where machines live changes    │
+        └─────────────────────────────────────────────────────────┘
 ```
 
-Takes a parts CSV/JSON, checks prices across suppliers in cloud
-browsers (sequential in live mode — Solari free-plan accounts allow one
-concurrent session; stealth + managed residential proxy + captcha solving
-are opt-in via `SOLARI_STEALTH=1` on a paid plan),
-aggregates the offers inside a sandbox — a login-gated price can't win a line,
-and savings vs. your baseline supplier are computed honestly — then renders a
-Markdown/HTML quote and delivers it.
+The one rule that keeps the monorepo coherent: **use-case packages never
+import the Solari SDKs** — everything goes through `core/`. Details:
+[docs/architecture.md](docs/architecture.md).
 
-## How Solari is used
+### The trust boundary
 
-| Primitive | What it does here |
-| --- | --- |
-| **Cloud browsers** | Portal booking, supplier price-checks. Sessions are created with `recording=True` — the rrweb replay is both the demo video and the audit trail. Browser profiles hold logins server-side so a human signs in once (via a handoff link) and every later run starts authenticated. |
-| **Sandboxes** | The untrusted-input boundary. Raw emails and scraped HTML are processed inside disposable microVMs by self-contained stdlib worker scripts (`parse_worker.py`, `aggregate_worker.py`); only normalized JSON crosses back out. In live mode the demo portal itself runs inside a sandbox behind a preview URL so a cloud browser can reach it. |
-| **Desktops** | The fallback for steps a browser can't do — native apps, OS dialogs, GUI-only confirmations. A real Linux desktop driven by computer-use, recorded to mp4, with a live VNC `streamUrl` in the run log. |
+Untrusted input — inbound email, scraped HTML, uploaded photos — is
+processed **inside a Solari sandbox**, never by the orchestrator. Worker
+scripts are self-contained stdlib files copied into the microVM; only
+normalized JSON printed after a `@@RESULT@@` marker crosses back out. A
+prompt-injection attempt in a work-order email can produce a weird field
+value — it cannot reach your disk, network, or credentials, because those
+things aren't in the VM.
 
-`docs/architecture.md` explains the layering rule (use-case packages never
-import the Solari SDKs — everything goes through `core/`) and the Solari
-gotchas this codebase already handles.
+### The approval boundary
+
+Every customer-facing or external action — sending a text, publishing a
+review reply, delivering a quote, posting to social — goes through
+`core/approvals.py` first. The gate is **fail-closed**: no decision
+backend configured means the action is denied, logged, and the run moves
+on. Backends: CLI prompt, Slack, mock decisions for tests, and a
+`preapproved_actions` list for genuinely low-risk actions you choose to
+auto-approve. Every request and decision lands in the run log.
+
+### Cost instrumentation
+
+Every run meters its Solari sessions (primitive, session id, wall-clock
+seconds) and appends a `cost_summary` to the JSONL log. Rates live in
+`config/pricing.yaml`; unset rates report `unavailable` rather than an
+invented number. Summarize across runs:
+
+```bash
+python runs/cost-report.py                 # table of all runs
+python runs/cost-report.py --package dispatch
+```
+
+## The nine packages
+
+| Package | Pipeline | Solari primitives | Real constraint it solves |
+| --- | --- | --- | --- |
+| `dispatch` | work-order email → parse → schedule → book → notify | sandbox + browser (+ desktop fallback) | Untrusted email parsed in a microVM; booking needs a real logged-in browser; GUI-only portal steps get a desktop fallback |
+| `procurement` | parts list → price-check suppliers → aggregate → quote | browser × N + sandbox | Supplier sites block bots; login-gated prices must not "win" a line |
+| `missed-call-textback` | missed call → SMS textback → qualify → book → confirm | sandbox + browser | Speed-to-lead in minutes, but a human approves every outbound text |
+| `review-responder` | reviews → draft replies → approve → publish → digest | sandbox + browser | Low-star replies need a human-edit lane; publishing is gated |
+| `invoice-chaser` | aging AR + payments → match → escalate-by-days → remind | sandbox | Escalation tone is policy, not vibes; recovered revenue is counted only from real payment events |
+| `quote-follower` | stale quotes → bucket → follow up → track | browser or CSV | "Sent but ghosted" vs "never sent" need different follow-ups |
+| `meeting-prep` | job history → normalize → flag → per-tech briefs | sandbox | Callbacks, complaints, and warranty-risk jobs surfaced before the morning meeting |
+| `quote-builder` | job spec → pricebook lookup → line items → quote → deliver | sandbox | Unpriced items are flagged unconfirmed, never silently estimated |
+| `photo-marketer` | job photos → dedupe/clean → captions → approve → post | sandbox + browser | Exif/PII stripped in-sandbox; nothing posts without approval |
+
+Per-package docs: `packages/<name>/README.md`. Adapter contracts:
+[docs/adapter-guide.md](docs/adapter-guide.md). Deploying for a client:
+[docs/deployment.md](docs/deployment.md).
 
 ## Run it — no keys needed
 
@@ -62,26 +99,22 @@ gotchas this codebase already handles.
 pip install -r requirements.txt   # PyYAML + the Solari SDKs
 pip install pytest                # for the test suite
 
-python demo.py --mock
+python demo.py --mock             # all nine packages, end to end
+python demo.py --mock --only invoice-chaser
 ```
 
-`--mock` runs **both** pipelines end to end with zero credentials. "Browsers"
-are real HTTP fetches against a bundled demo portal (FieldDesk, a tiny stdlib
-web app in this repo) and cached supplier pages; "sandboxes" are real local
-subprocesses running the *same* worker scripts; "desktops" log the computer-use
-actions a real run would take. The pipeline code is identical either way —
-only where the machines live changes. `[plan]`/`--` lines in the output are
-exactly what live mode would send.
+`--mock` runs every pipeline with zero credentials. "Browsers" are real
+HTTP fetches against a bundled demo portal (FieldDesk, a tiny stdlib web
+app in this repo) and fixture pages; "sandboxes" are real local
+subprocesses running the *same* worker scripts; "desktops" log the
+computer-use actions a real run would take. The pipeline code is identical
+either way — only where the machines live changes. `[plan]`/`--` lines are
+exactly what live mode would send, and approval requests are shown as
+previews.
 
-Run one use case at a time:
-
-```bash
-python demo.py --mock --only dispatch
-python demo.py --mock --only procurement
-```
-
-Every run appends a JSONL audit log to `runs/` and writes quote reports to
-`out/`. Tests: `pytest`.
+Every run appends a JSONL audit log to `runs/` and writes artifacts
+(quotes, briefs, cleaned photos) to `out/`. Tests: `pytest`. Selector
+health: `python healthcheck.py`.
 
 ## Run it live
 
@@ -89,70 +122,94 @@ Every run appends a JSONL audit log to `runs/` and writes quote reports to
 cp .env.example .env        # then edit .env
 # SOLARI_API_KEY=slr_live_...   from https://console.getsolari.com
 
-python demo.py --live
+python demo.py --live --only dispatch
 ```
 
-`.env.example` documents every knob. All optional: `SLACK_WEBHOOK_URL` posts
-summaries to an ops channel, `GMAIL_USER` + `GMAIL_APP_PASSWORD` (a Gmail *app
-password*) send customer confirmations and ingest real work-order mail,
-`QUO_*` texts customers through the Quo virtual phone system. Anything not
-configured is skipped and logged as "would have sent" — a run still completes.
+`.env.example` documents every knob. All optional: `SLACK_WEBHOOK_URL`
+posts summaries, `GMAIL_USER` + `GMAIL_APP_PASSWORD` (a Gmail *app
+password*) sends mail and ingests real work-order email, `QUO_*` texts
+through the Quo virtual phone system. Anything not configured is skipped
+and logged as "would have sent" — the run still completes.
 
-Live mode needs no other code changes: the same adapters drive real portal
-and supplier sites through cloud browsers. For sites that need a login, see
-`docs/adapter-guide.md` — you sign in once through a human-handoff link and
-the profile keeps you authenticated forever after. **Credentials never go in
-this repo or its config.**
+For sites that need a login, see `docs/adapter-guide.md`: you sign in once
+through a human-handoff link and the Solari profile keeps every later run
+authenticated. **Credentials never go in this repo or its config.**
 
-## Live demo results
+## What actually happened live (2026-09-13)
 
-Both pipelines have been run end to end against real Solari infrastructure
-(2026-09-13). The dispatch pipeline is fully live; procurement runs live
-with a documented free-plan limitation.
+All nine packages ran against real Solari infrastructure via the contest
+launcher. Run logs: `runs/*.jsonl` (untracked, regenerate by running).
+Replay manifest: [docs/demo/replays.json](docs/demo/replays.json).
 
-**Dispatch (live):** Two fictional work-order emails were ingested, parsed
-inside real Solari sandboxes, scheduled, and booked through a real Solari
-cloud browser driving a demo portal (FieldDesk) hosted in a Solari sandbox.
-Both jobs were created: `JOB-1001` (plumbing) and `JOB-1002` (HVAC). The
-desktop fallback for the GUI-only confirmation step gracefully skips on
-Solari free-plan accounts (concurrency limit of 1) — the job is already
-booked via the browser, so this is a demo flourish, not a correctness issue.
+- **dispatch** — two fictional work orders parsed in real sandboxes and
+  booked through a real cloud browser into FieldDesk (`JOB-1001`,
+  `JOB-1002`). Desktop fallback skipped itself on the free plan's
+  one-session concurrency limit — logged, not hidden.
+- **missed-call-textback** — four missed calls processed, three booked
+  (`JOB-1001`…`JOB-1003`) in the live portal after CLI-approved textbacks;
+  one escalated per policy.
+- **procurement** — three parts checked across real supplier sites in
+  sequential cloud browsers. Ferguson/SupplyHouse/Home Depot Pro block
+  non-stealth automation: 9 offers found, 0 priced. The run completes
+  honestly and the quote shows only what was actually obtainable.
+- **invoice-chaser** — 6 invoices reconciled in a real sandbox, 4
+  reminders approved via the gate (senders not configured → logged as
+  would-send).
+- **review-responder** — 5 reviews drafted and gated; publish step skipped
+  with a logged reason because no real review platform is configured.
+- **quote-follower** — fixture list URL detected; fell back to CSV source
+  in live mode rather than scraping a fake domain.
+- **meeting-prep, quote-builder, photo-marketer** — real sandbox runs;
+  photo publish boundary not exercised (fixture composer URL).
 
-**Procurement (live):** Three parts were price-checked across suppliers using
-real Solari cloud browsers (sequential on free-plan accounts to respect the
-concurrency limit), aggregated in a Solari sandbox, and rendered to
-Markdown/HTML quotes. Note: supplier websites (Ferguson, SupplyHouse, Home
-Depot Pro) aggressively block non-stealth browsers; Solari's stealth mode +
-residential proxy + captcha solving require a paid plan (HTTP 402 on free).
-Set `SOLARI_STEALTH=1` to enable the full stealth stack on a paid plan.
+**Replays.** Replays on this account have been unreliable — most sessions
+return `ReplayUnavailable` (404, non-retryable) even after polling. One
+real rrweb replay was captured: `docs/demo/*.replay.ndjson` (a procurement
+browser session). The manifest records the true status of every session.
+Nothing here is faked.
+
+## Cost, honestly
+
+- The software is MIT-licensed and free. Solari has a free tier; mock
+  mode needs no credentials and spends nothing.
+- The free tier is fine for evaluation and development. It allows **one
+  concurrent session** and **no stealth, residential proxies, or captcha
+  solving** — which is why the live procurement run above priced zero
+  offers.
+- Production volume — repeated browser workflows, concurrency, stealth —
+  will likely need a paid Solari plan. Pricing and capabilities change;
+  check the current terms.
+- Every run reports measured session-seconds; dollar estimates appear
+  only when you set rates in `config/pricing.yaml`. Where no rate is
+  configured the report says `unavailable`. Costs vary with volume,
+  retries, concurrency, desktop usage, and anti-bot features — run
+  `runs/cost-report.py` against your own usage.
 
 ## Repo layout
 
 ```
-core/            SolariCore (live) + MockSolari, PageDriver, RunLog, notify/
-packages/
-  dispatch/      ingest → parse → schedule → book → confirm → notify
-    portals/     adapter interface + FieldDesk (working) + ST/HCP/Jobber examples
-  procurement/   parts → price-check → aggregate → quote → deliver
-    suppliers/   regex/config-driven adapters (Ferguson, SupplyHouse, HD Pro)
-config/          YAML knobs — availability, portal selectors, suppliers
-fixtures/        fictional work orders, parts lists, supplier pages, portal seed
-docs/            architecture.md · adapter-guide.md · demo/ (replays)
+core/            SolariCore + MockSolari, PageDriver, RunLog, CostTracker,
+                 ApprovalGate, notify/
+packages/        nine use-case packages, each with adapters, tests, README
+config/          YAML knobs — portals, suppliers, approvals, pricing, per-package
+fixtures/        fictional work orders, reviews, AR aging, pricebook, photos…
+scripts/         collect_replays.py — honest replay/artifact collection
+docs/            architecture.md · adapter-guide.md · deployment.md ·
+                 demo/ (replay evidence) · launch/ (announcement drafts)
 demo.py          the runner · new_usecase.py  the scaffolder
+healthcheck.py   selector/fixture drift checks · runs/cost-report.py
 ```
 
 ## Add your own use case
 
 ```bash
-python new_usecase.py review-responder
+python new_usecase.py my-automation
 ```
 
-Scaffolds `packages/review_responder/` with the contract every package
-follows — `async def run(core, run_log, cfg)` — plus a config stub and a test
-file. `core` gives you browsers, sandboxes, desktops, notifications, and the
-audit log for free. Then wire it into `demo.py`. Adapter authors: read
-`docs/adapter-guide.md` — a new portal or supplier is usually YAML selectors,
-not Python.
+Scaffolds `packages/my_automation/` with the full contract —
+`async def run(core, run_log, cfg)`, approval-gate usage, cost metering,
+a health module, config stub, and a test. Register it in `demo.py`'s
+`PACKAGES` list and it runs in `--mock` immediately.
 
 ## Notes
 
@@ -161,8 +218,10 @@ not Python.
 - All fixtures are fictional — `.example` domains, 555 numbers, invented
   people and companies.
 - The community portal adapters (ServiceTitan, Housecall Pro, Jobber) are
-  documented examples with placeholder selectors, not tested integrations —
-  fill in your tenant's selectors in `config/portals.<name>.yaml`.
+  documented examples with placeholder selectors, not tested integrations
+  or partnerships — fill in your tenant's selectors.
+- Known limitations and what stays mock/fixture-backed in a default
+  deployment are listed in [docs/deployment.md](docs/deployment.md).
 
 ## License
 
