@@ -9,6 +9,7 @@ the driver is a Solari cloud browser.
 
 from __future__ import annotations
 
+from ..mock_portal_server import DEMO_EMAIL, DEMO_PASSWORD
 from ..models import NeedsDesktopError, Slot, WorkOrder
 
 
@@ -40,8 +41,8 @@ class MockPortalAdapter:
 
     async def login(self, driver) -> bool:
         await driver.goto(self.base_url + "/login")
-        await driver.fill(self.sel["login.email"], "dispatcher@yourshop.example")
-        await driver.fill(self.sel["login.password"], "demo-password")
+        await driver.fill(self.sel["login.email"], DEMO_EMAIL)
+        await driver.fill(self.sel["login.password"], DEMO_PASSWORD)
         await driver.click(self.sel["login.submit"])
         return "/login" not in driver.current_url
 

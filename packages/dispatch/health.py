@@ -19,32 +19,39 @@ from core.config import load_yaml, repo_root
 
 def _portal_pages() -> dict[str, str]:
     """Serve the mock portal and return {page_name: html} the adapter uses."""
+    from http.cookiejar import CookieJar
+
     from . import mock_portal_server
 
     server, base = mock_portal_server.serve(
         repo_root() / "fixtures" / "mock_portal" / "seed.json")
     try:
-        def get(path: str, cookie: str = "session=ok") -> str:
-            req = urllib.request.Request(base + path,
-                                         headers={"cookie": cookie})
-            with urllib.request.urlopen(req) as res:
+        # Sign in for real: the portal issues a per-run session cookie and
+        # rejects bad credentials — no static cookie to forge.
+        opener = urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(CookieJar()))
+
+        def get(path: str) -> str:
+            with opener.open(base + path) as res:
                 return res.read().decode()
 
-        pages = {
-            "login": get("/login", cookie=""),
-            "new_job": get("/jobs/new"),
-        }
+        pages = {"login": get("/login")}
+        res = opener.open(
+            base + "/login",
+            urlencode({"email": mock_portal_server.DEMO_EMAIL,
+                       "password": mock_portal_server.DEMO_PASSWORD}).encode())
+        res.read()
+        pages["new_job"] = get("/jobs/new")
         # A booked seed job has no confirm button — create a fresh job so the
         # confirm selectors can be checked on its page.
-        req = urllib.request.Request(
-            base + "/jobs", data=urlencode({
+        res = opener.open(
+            base + "/jobs",
+            urlencode({
                 "customer_name": "Healthcheck Co", "site_address": "1 Test Way",
                 "tenant_name": "Check", "tenant_phone": "555-0100",
                 "trade": "plumbing", "priority": "normal",
                 "window_start": "2026-01-01 09:00", "window_end": "2026-01-01 11:00",
-                "notes": "selector healthcheck"}).encode(),
-            headers={"cookie": "session=ok"})
-        res = urllib.request.urlopen(req)  # follows the 303 to the new job page
+                "notes": "selector healthcheck"}).encode())
         job_path = res.geturl().rsplit(base, 1)[-1]
         res.read()
         pages["job_page"] = get(job_path)

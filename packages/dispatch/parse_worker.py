@@ -210,7 +210,8 @@ def parse_work_order(eml_text: str) -> dict:
             warnings.append(f"missing {required}")
     if not sla_start:
         warnings.append("no SLA window parsed — scheduler will use priority default")
-    order["needs_review"] = bool(warnings and not order["site_address"]) or "missing trade" in warnings
+    # Any parse warning routes the order to human review.
+    order["needs_review"] = bool(warnings)
     order["warnings"] = warnings
     return order
 

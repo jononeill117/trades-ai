@@ -15,6 +15,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+from core.approvals import get_gate
 from core.audit import RunLog
 from core.config import env, load_yaml, repo_root
 from core.drivers import as_driver
@@ -64,6 +65,8 @@ async def _portal_url(core, cfg: dict, run_log: RunLog) -> tuple[str, object | N
 
 async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
     cfg = {**_cfg(), **(cfg or {})}
+    mode = cfg.get("mode", "mock")
+    gate = get_gate(mode, run_log)
     results: dict = {"orders": [], "booked": 0, "skipped": 0}
     keepalive = None
     try:
@@ -123,6 +126,23 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             run_log.step("schedule", tech=slot.tech, start=slot.start, end=slot.end,
                          proposals=len(slots))
 
+            # -- book: gated — the parsed order is untrusted input, so a human
+            # approves the booking (and sees every attacker-influenced field)
+            # before any browser session opens.
+            approved = await gate.require(
+                "dispatch.book", "portal",
+                f"Book {order.trade} for {order.customer_name} @ {order.site_address} "
+                f"— {slot.label()}",
+                payload={"order": order.to_dict(),
+                         "slot": {"tech": slot.tech, "start": slot.start, "end": slot.end}},
+                requester="dispatch")
+            if not approved:
+                run_log.step("book", status="skipped",
+                             reason="approval denied — no job created")
+                results["skipped"] += 1
+                entry["status"] = "booking_denied"
+                continue
+
             # -- book (cloud browser) ---------------------------------------------
             # The browser session is closed BEFORE any desktop fallback: Solari
             # accounts with a low concurrency limit cannot hold the portal
@@ -176,23 +196,50 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             res = await slack.send(":calendar: " + summary)
             run_log.step("notify_slack", status=res.status, detail=res.detail)
 
+            # Customer-facing sends are gated: the recipient address/number and
+            # the tenant name all came from the (untrusted) work-order email.
             gmail = GmailNotifier()
             to = order.tenant_email or cfg.get("customer_fallback_email", "")
-            res = await gmail.send(
-                to or "customer@example.com",
-                f"Your {order.trade} appointment is booked",
-                f"Hi {order.tenant_name or 'there'},\n\nYou're booked for "
-                f"{slot.label()} at {order.site_address}.\n\n— Your service team",
-                sender=env("DISPATCH_REPLY_FROM") or env("GMAIL_USER"),
-            )
-            run_log.step("notify_email", status=res.status, detail=res.detail)
+            email_body = (f"Hi {order.tenant_name or 'there'},\n\nYou're booked for "
+                          f"{slot.label()} at {order.site_address}.\n\n— Your service team")
+            approved = await gate.require(
+                "dispatch.confirm.email", "gmail",
+                f"Email {to or 'customer@example.com'}: {order.trade} booking confirmation",
+                payload={"to": to or "customer@example.com",
+                         "subject": f"Your {order.trade} appointment is booked",
+                         "body": email_body,
+                         "order": order.to_dict()},
+                requester="dispatch")
+            if approved:
+                res = await gmail.send(
+                    to or "customer@example.com",
+                    f"Your {order.trade} appointment is booked",
+                    email_body,
+                    sender=env("DISPATCH_REPLY_FROM") or env("GMAIL_USER"),
+                )
+                run_log.step("notify_email", status=res.status, detail=res.detail)
+            else:
+                run_log.step("notify_email", status="skipped",
+                             reason="approval denied — no email sent")
 
             quo = QuoNotifier()
-            res = await quo.send(
-                order.tenant_phone or "+15555550100",
-                f"Your {order.trade} visit is booked: {slot.label()}",
-            )
-            run_log.step("notify_sms", status=res.status, detail=res.detail)
+            sms_text = f"Your {order.trade} visit is booked: {slot.label()}"
+            approved = await gate.require(
+                "dispatch.confirm.sms", "quo-sms",
+                f"Text {order.tenant_phone or '+15555550100'}: {sms_text[:80]}",
+                payload={"to": order.tenant_phone or "+15555550100",
+                         "text": sms_text,
+                         "order": order.to_dict()},
+                requester="dispatch")
+            if approved:
+                res = await quo.send(
+                    order.tenant_phone or "+15555550100",
+                    sms_text,
+                )
+                run_log.step("notify_sms", status=res.status, detail=res.detail)
+            else:
+                run_log.step("notify_sms", status="skipped",
+                             reason="approval denied — no SMS sent")
 
         run_log.finish("ok", booked=results["booked"], skipped=results["skipped"])
         return results
