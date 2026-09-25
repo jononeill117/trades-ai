@@ -18,9 +18,13 @@ pattern (and the audit trail) is the part that matters here.
 from __future__ import annotations
 
 import asyncio
+import shlex
 import time
+from urllib.parse import urlparse
 
 from core.drivers import HttpDriver
+
+from .mock_portal_server import DEMO_EMAIL, DEMO_PASSWORD
 
 
 async def confirm_on_dispatch_board(core, run_log, board_url: str, portal_base_url: str = "") -> str:
@@ -63,7 +67,17 @@ async def confirm_on_dispatch_board(core, run_log, board_url: str, portal_base_u
             "sh", args=["-c", "command -v google-chrome || command -v chromium || command -v firefox"]
         )
         browser_bin = found.stdout.strip().splitlines()[0] if found.stdout.strip() else "google-chrome"
-        await desk.exec("sh", args=["-c", f"nohup {browser_bin} '{board_url}' >/dev/null 2>&1 &"])
+        # Sign in through the login form first — the desktop's fresh browser
+        # has no session. The email field autofocuses on the login page.
+        base = portal_base_url or f"{urlparse(board_url).scheme}://{urlparse(board_url).netloc}"
+        await desk.exec("sh", args=["-c", f"nohup {browser_bin} {shlex.quote(base + '/login')} >/dev/null 2>&1 &"])
+        await asyncio.sleep(6)
+        await desk.keyboard.type(DEMO_EMAIL)
+        await desk.keyboard.press("Tab")
+        await desk.keyboard.type(DEMO_PASSWORD)
+        await desk.keyboard.press("Enter")
+        await asyncio.sleep(3)
+        await desk.exec("sh", args=["-c", f"nohup {browser_bin} {shlex.quote(board_url)} >/dev/null 2>&1 &"])
         await asyncio.sleep(6)
         await desk.keyboard.press("Enter")
         await asyncio.sleep(3)
@@ -77,13 +91,11 @@ async def confirm_on_dispatch_board(core, run_log, board_url: str, portal_base_u
 
 async def _confirm_over_http(board_url: str, portal_base_url: str) -> str:
     """Mock-mode confirmation: same clicks a desktop would make, over HTTP."""
-    from urllib.parse import urlparse
-
     base = portal_base_url or f"{urlparse(board_url).scheme}://{urlparse(board_url).netloc}"
     driver = HttpDriver(base)
     await driver.goto("/login")
-    await driver.fill("#email", "dispatcher@yourshop.example")
-    await driver.fill("#password", "demo-password")
+    await driver.fill("#email", DEMO_EMAIL)
+    await driver.fill("#password", DEMO_PASSWORD)
     await driver.click("#login-submit")
     await driver.goto(board_url)
     await driver.click("#board-confirm")

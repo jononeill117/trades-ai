@@ -105,8 +105,12 @@ Keep runs sequential on a free plan (one concurrent session).
   `composer_url`, review-platform config. Unset → the package logs that
   the boundary wasn't exercised rather than pretending.
 - Notification channels without env vars log "would have sent".
-- The FieldDesk portal is a fictional demo portal. Real portals need a
-  selector map (`config/portals.<name>.yaml`) or an adapter class.
+- The FieldDesk portal is a fictional demo portal — demo-only credentials,
+  per-run session tokens, no real accounts. In live mode it sits behind a
+  Solari sandbox preview URL, which is publicly reachable: do not put real
+  customer data in it or treat the preview URL as access control. Real
+  portals need a selector map (`config/portals.<name>.yaml`) or an adapter
+  class.
 
 ## Incident notes
 

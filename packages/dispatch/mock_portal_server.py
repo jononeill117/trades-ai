@@ -5,24 +5,37 @@ the MockPortal adapter books real jobs against it, and because it's a single
 dependency-free Python file it can also run INSIDE a Solari sandbox — the
 live demo drives a real Solari cloud browser against its public preview URL.
 
+This is a DEMO portal: it holds fake jobs and accepts a single documented
+demo login (DEMO_EMAIL / DEMO_PASSWORD below). It is not an access-controlled
+system — do not expose it to the public internet or store real customer data
+in it. Sessions are per-run random tokens, not real user accounts.
+
 Run it yourself:   python mock_portal_server.py --port 8080
 """
 
 from __future__ import annotations
 
+import html
 import json
+import secrets
 import sys
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-STATE: dict = {"jobs": {}, "settings": {"gui_confirm_required": True}, "counter": 1000}
+STATE: dict = {"jobs": {}, "settings": {"gui_confirm_required": True}, "counter": 1000,
+               "sessions": set()}
+
+# The demo login the bundled adapter uses. Verification is real (a bad login
+# gets no session) even though the credential itself is public by design.
+DEMO_EMAIL = "dispatcher@yourshop.example"
+DEMO_PASSWORD = "demo-password"
 
 LOGIN_PAGE = """<!doctype html><title>FieldDesk — sign in</title>
 <h1>FieldDesk</h1><p>Field-service portal (demo)</p>
 <form method="post" action="/login">
-<input name="email" id="email" placeholder="dispatcher@yourshop.example">
+<input name="email" id="email" placeholder="dispatcher@yourshop.example" autofocus>
 <input name="password" id="password" type="password">
 <button type="submit" id="login-submit">Sign in</button></form>"""
 
@@ -41,14 +54,20 @@ NEW_JOB_PAGE = """<!doctype html><title>FieldDesk — new job</title>
 <button type="submit" id="create-job">Create job</button></form>"""
 
 
+def _e(value) -> str:
+    """Job fields are stored attacker-influenceable data — escape on render."""
+    return html.escape(str(value))
+
+
 def _page(title: str, inner: str) -> bytes:
-    return f"<!doctype html><title>FieldDesk — {title}</title><h1>{title}</h1>{inner}".encode()
+    t = _e(title)
+    return f"<!doctype html><title>FieldDesk — {t}</title><h1>{t}</h1>{inner}".encode()
 
 
 def _dashboard() -> bytes:
     rows = "".join(
-        f'<li><a href="/jobs/{jid}">{jid}</a> — {j["customer_name"]} — '
-        f'<span id="status-{jid}">{j["status"]}</span></li>'
+        f'<li><a href="/jobs/{_e(jid)}">{_e(jid)}</a> — {_e(j["customer_name"])} — '
+        f'<span id="status-{_e(jid)}">{_e(j["status"])}</span></li>'
         for jid, j in STATE["jobs"].items()
     )
     return _page("Jobs", f'<a href="/jobs/new" id="new-job-link">New job</a><ul>{rows}</ul>')
@@ -57,16 +76,16 @@ def _dashboard() -> bytes:
 def _job_page(job: dict) -> bytes:
     confirm = ""
     if job["status"] != "booked":
-        confirm = f"""<form method="post" action="/jobs/{job['id']}/confirm">
+        confirm = f"""<form method="post" action="/jobs/{_e(job['id'])}/confirm">
         <button type="submit" id="confirm-booking">Confirm booking</button></form>
         <p id="board-note">Final confirmation happens on the dispatch board.</p>"""
     return _page(
         f"Job {job['id']}",
-        f'<p>ID: <span id="job-id">{job["id"]}</span></p>'
-        f'<p>Status: <span id="job-status">{job["status"]}</span></p>'
-        f'<p>Customer: <span id="job-customer">{job["customer_name"]}</span></p>'
-        f'<p>Site: <span id="job-site">{job["site_address"]}</span></p>'
-        f'<p>Window: <span id="job-window">{job["window_start"]} to {job["window_end"]}</span></p>'
+        f'<p>ID: <span id="job-id">{_e(job["id"])}</span></p>'
+        f'<p>Status: <span id="job-status">{_e(job["status"])}</span></p>'
+        f'<p>Customer: <span id="job-customer">{_e(job["customer_name"])}</span></p>'
+        f'<p>Site: <span id="job-site">{_e(job["site_address"])}</span></p>'
+        f'<p>Window: <span id="job-window">{_e(job["window_start"])} to {_e(job["window_end"])}</span></p>'
         + confirm,
     )
 
@@ -76,8 +95,8 @@ def _board_page(job: dict) -> bytes:
     fallback opens this in the desktop's Chrome and clicks CONFIRM."""
     return _page(
         "Dispatch board",
-        f'<p id="board-job">{job["id"]} — {job["customer_name"]} @ {job["site_address"]}</p>'
-        f'<form method="post" action="/jobs/{job["id"]}/confirm">'
+        f'<p id="board-job">{_e(job["id"])} — {_e(job["customer_name"])} @ {_e(job["site_address"])}</p>'
+        f'<form method="post" action="/jobs/{_e(job["id"])}/confirm">'
         f'<input type="hidden" name="via" value="board">'
         f'<button type="submit" id="board-confirm" autofocus style="font-size:2em">CONFIRM</button></form>',
     )
@@ -101,7 +120,12 @@ class Handler(BaseHTTPRequestHandler):
         self._send(b"", status=303, headers={"location": to, **(headers or {})})
 
     def _signed_in(self) -> bool:
-        return "session=ok" in (self.headers.get("cookie") or "")
+        cookie = self.headers.get("cookie") or ""
+        for part in cookie.split(";"):
+            name, _, value = part.strip().partition("=")
+            if name == "session" and value in STATE["sessions"]:
+                return True
+        return False
 
     def _form(self) -> dict:
         length = int(self.headers.get("content-length") or 0)
@@ -133,7 +157,17 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         form = self._form()
         if path == "/login":
-            return self._redirect("/", {"set-cookie": "session=ok; Path=/"})
+            if form.get("email") == DEMO_EMAIL and form.get("password") == DEMO_PASSWORD:
+                token = secrets.token_urlsafe(18)
+                STATE["sessions"].add(token)
+                return self._redirect(
+                    "/", {"set-cookie": f"session={token}; Path=/; HttpOnly; SameSite=Lax"})
+            return self._send(
+                LOGIN_PAGE.replace(
+                    "<p>Field-service portal (demo)</p>",
+                    "<p>Field-service portal (demo)</p><p id=\"login-error\">"
+                    "Sign-in failed — check the email and password.</p>").encode(),
+                401)
         if not self._signed_in():
             return self._redirect("/login")
         if path == "/jobs":
@@ -188,8 +222,10 @@ async def serve_in_sandbox(sbx, seed_path: Path | str | None = None, port: int =
     else:
         seed_args = []
     # commands.run is NOT shell-interpreted — argv goes in args.
+    # 0.0.0.0 inside the sandbox so the Solari preview tunnel can reach it.
     await sbx.commands.run(
-        "python3", args=["/tmp/portal_server.py", "--port", str(port), *seed_args],
+        "python3", args=["/tmp/portal_server.py", "--port", str(port),
+                         "--bind", "0.0.0.0", *seed_args],
         background=True,
     )
     preview = await sbx.preview_url(port)
@@ -200,6 +236,9 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     port = int(args[args.index("--port") + 1]) if "--port" in args else 8080
     seed = args[args.index("--seed") + 1] if "--seed" in args else None
+    # Loopback by default; serve_in_sandbox passes --bind 0.0.0.0 because the
+    # Solari preview tunnel needs the port reachable beyond the VM's loopback.
+    bind = args[args.index("--bind") + 1] if "--bind" in args else "127.0.0.1"
     load_seed(seed)
-    print(f"FieldDesk listening on http://127.0.0.1:{port} (jobs: {len(STATE['jobs'])})")
-    ThreadingHTTPServer(("0.0.0.0", port), Handler).serve_forever()
+    print(f"FieldDesk listening on http://{bind}:{port} (jobs: {len(STATE['jobs'])})")
+    ThreadingHTTPServer((bind, port), Handler).serve_forever()

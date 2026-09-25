@@ -151,6 +151,26 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                 continue
             slot = slots[0]
 
+            # -- booking: gated, same as the SMS sends — create_job writes a
+            # real FSM job the shop will dispatch a technician to.
+            approved = await gate.require(
+                "booking.create", "portal",
+                f"Book {q.trade or 'job'} for {call.caller_name or call.from_number} "
+                f"@ {order.site_address} — {slot.label()}",
+                payload={"call_id": call.id, "from": call.from_number,
+                         "caller_name": call.caller_name,
+                         "site": order.site_address, "trade": q.trade,
+                         "priority": q.urgency,
+                         "slot": {"tech": slot.tech, "start": slot.start,
+                                  "end": slot.end}},
+                requester="missed-call-textback")
+            if not approved:
+                run_log.step("book", status="skipped", call_id=call.id,
+                             reason="approval denied — no job created")
+                state.mark(call.id)
+                results["skipped"] += 1
+                continue
+
             session, page = await core.browser(
                 profile_name=cfg.get("portal_profile"), recording=True)
             run_log.session("browser", session.id)
