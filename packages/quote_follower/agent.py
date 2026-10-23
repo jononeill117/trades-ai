@@ -142,12 +142,16 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             run_log.step("followup", status="skipped", quote=q.quote_id,
                          reason="no contact channel")
             continue
+        # Send from the payload dict (WS7 T-1 fix-up): an approver edit is
+        # copied back into this dict by the gate, and the send below uses
+        # exactly what was approved — not the pre-approval subject/body.
+        followup_payload = {"quote_id": q.quote_id, "bucket": bucket,
+                            "to": to, "subject": subject, "body": body}
         approved = await gate.require(
             f"quote.followup.{channel}", channel,
             f"Follow up {bucket.replace('_', ' ')} quote {q.quote_id} "
             f"(${q.amount:,.2f}, {q.days_idle(today)}d idle) to {q.customer}",
-            payload={"quote_id": q.quote_id, "bucket": bucket, "to": to,
-                     "subject": subject, "body": body},
+            payload=followup_payload,
             requester="quote-follower")
         if not approved:
             run_log.step("followup", status="skipped", quote=q.quote_id,
@@ -155,9 +159,12 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             results["denied"] += 1
             continue
         if channel == "email":
-            res = await GmailNotifier().send(to, subject, body)
+            res = await GmailNotifier().send(
+                followup_payload["to"], followup_payload["subject"],
+                followup_payload["body"])
         else:
-            res = await QuoNotifier().send(to, body)
+            res = await QuoNotifier().send(
+                followup_payload["to"], followup_payload["body"])
         run_log.step("followup", status=res.status, quote=q.quote_id,
                      channel=channel, bucket=bucket)
         if res.status != "error":

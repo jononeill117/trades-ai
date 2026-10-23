@@ -104,13 +104,17 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             text = caps.get(platform)
             if not text:
                 continue
+            # Publish from the payload dict (WS7 T-1 fix-up): an approver
+            # edit is copied back into this dict by the gate, and the
+            # caption handed to _publish is exactly what was approved.
+            post_payload = {"folder": folder["folder"], "platform": platform,
+                            "caption": text,
+                            "photos": [p["file"] for p in folder["photos"]
+                                       if p["usable"]]}
             approved = await gate.require(
                 f"social.publish.{platform}", platform,
                 f"Post {folder['folder']} photos to {platform}: {text[:90]}",
-                payload={"folder": folder["folder"], "platform": platform,
-                         "caption": text,
-                         "photos": [p["file"] for p in folder["photos"]
-                                    if p["usable"]]},
+                payload=post_payload,
                 requester="photo-marketer")
             if not approved:
                 run_log.step("publish", status="skipped",
@@ -118,7 +122,8 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                              reason="approval denied")
                 out["denied"] += 1
                 continue
-            status = await _publish(core, cfg, platform, folder, text, run_log)
+            status = await _publish(core, cfg, platform, folder,
+                                    post_payload["caption"], run_log)
             run_log.step("publish", folder=folder["folder"],
                          platform=platform, detail=status)
             out["posted"] += 1

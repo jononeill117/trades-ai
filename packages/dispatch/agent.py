@@ -129,13 +129,19 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             # -- book: gated — the parsed order is untrusted input, so a human
             # approves the booking (and sees every attacker-influenced field)
             # before any browser session opens.
+            # editable=False (WS7 T-1 fix-up): the booking proceeds from the
+            # order/slot objects, not from payload fields, so an approved
+            # edit could never reach create_job. The gate refuses 'e' with
+            # an explanation and denies — fix the order upstream instead.
+            book_payload = {"order": order.to_dict(),
+                            "slot": {"tech": slot.tech, "start": slot.start,
+                                     "end": slot.end}}
             approved = await gate.require(
                 "dispatch.book", "portal",
                 f"Book {order.trade} for {order.customer_name} @ {order.site_address} "
                 f"— {slot.label()}",
-                payload={"order": order.to_dict(),
-                         "slot": {"tech": slot.tech, "start": slot.start, "end": slot.end}},
-                requester="dispatch")
+                payload=book_payload,
+                requester="dispatch", editable=False)
             if not approved:
                 run_log.step("book", status="skipped",
                              reason="approval denied — no job created")
@@ -217,20 +223,24 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             to = order.tenant_email or cfg.get("customer_fallback_email", "")
             email_body = (f"Hi {order.tenant_name or 'there'},\n\nYou're booked for "
                           f"{slot.label()} at {order.site_address}.\n\n— Your service team")
+            # Send from the payload dict (WS7 T-1 fix-up): if the approver
+            # edits it, the gate copies the edited payload back into this
+            # dict, and the send below uses exactly what was approved.
+            email_payload = {"to": to or "customer@example.com",
+                             "subject": f"Your {order.trade} appointment is booked",
+                             "body": email_body,
+                             "job_status": entry["status"],
+                             "order": order.to_dict()}
             approved = await gate.require(
                 "dispatch.confirm.email", "gmail",
                 f"Email {to or 'customer@example.com'}: {order.trade} booking confirmation",
-                payload={"to": to or "customer@example.com",
-                         "subject": f"Your {order.trade} appointment is booked",
-                         "body": email_body,
-                         "job_status": entry["status"],
-                         "order": order.to_dict()},
+                payload=email_payload,
                 requester="dispatch")
             if approved:
                 res = await gmail.send(
-                    to or "customer@example.com",
-                    f"Your {order.trade} appointment is booked",
-                    email_body,
+                    email_payload["to"],
+                    email_payload["subject"],
+                    email_payload["body"],
                     sender=env("DISPATCH_REPLY_FROM") or env("GMAIL_USER"),
                 )
                 run_log.step("notify_email", status=res.status, detail=res.detail)
@@ -240,18 +250,20 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
 
             quo = QuoNotifier()
             sms_text = f"Your {order.trade} visit is booked: {slot.label()}"
+            # Send from the payload dict, same contract as the email above.
+            sms_payload = {"to": order.tenant_phone or "+15555550100",
+                           "text": sms_text,
+                           "job_status": entry["status"],
+                           "order": order.to_dict()}
             approved = await gate.require(
                 "dispatch.confirm.sms", "quo-sms",
                 f"Text {order.tenant_phone or '+15555550100'}: {sms_text[:80]}",
-                payload={"to": order.tenant_phone or "+15555550100",
-                         "text": sms_text,
-                         "job_status": entry["status"],
-                         "order": order.to_dict()},
+                payload=sms_payload,
                 requester="dispatch")
             if approved:
                 res = await quo.send(
-                    order.tenant_phone or "+15555550100",
-                    sms_text,
+                    sms_payload["to"],
+                    sms_payload["text"],
                 )
                 run_log.step("notify_sms", status=res.status, detail=res.detail)
             else:

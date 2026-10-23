@@ -77,11 +77,15 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                                  "Sorry we missed your call — this is {shop}. "
                                  "Reply with what you need and we'll get you scheduled.")
             first_text = first_text.replace("{shop}", cfg.get("shop_name", "the shop"))
+            # Send from the payload dict (WS7 T-1 fix-up): an approver
+            # edit is copied back into this dict by the gate, and the send
+            # below uses exactly what was approved.
+            textback_payload = {"to": call.from_number, "text": first_text,
+                                "call_id": call.id}
             approved = await gate.require(
                 "sms.textback", "quo-sms",
                 f"Text {call.from_number}: {first_text[:90]}",
-                payload={"to": call.from_number, "text": first_text,
-                         "call_id": call.id},
+                payload=textback_payload,
                 requester="missed-call-textback")
             if not approved:
                 run_log.step("textback", status="skipped", call_id=call.id,
@@ -89,7 +93,8 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                 state.mark(call.id)
                 results["skipped"] += 1
                 continue
-            res = await QuoNotifier().send(call.from_number, first_text)
+            res = await QuoNotifier().send(textback_payload["to"],
+                                           textback_payload["text"])
             run_log.step("textback", status=res.status, to=call.from_number,
                          detail=res.detail)
 
@@ -153,17 +158,22 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
 
             # -- booking: gated, same as the SMS sends — create_job writes a
             # real FSM job the shop will dispatch a technician to.
+            # editable=False (WS7 T-1 fix-up): create_job proceeds from the
+            # order/slot objects, not from payload fields, so an approved
+            # edit could never reach it. The gate refuses 'e' with an
+            # explanation and denies — fix the inputs upstream instead.
+            booking_payload = {"call_id": call.id, "from": call.from_number,
+                               "caller_name": call.caller_name,
+                               "site": order.site_address, "trade": q.trade,
+                               "priority": q.urgency,
+                               "slot": {"tech": slot.tech, "start": slot.start,
+                                        "end": slot.end}}
             approved = await gate.require(
                 "booking.create", "portal",
                 f"Book {q.trade or 'job'} for {call.caller_name or call.from_number} "
                 f"@ {order.site_address} — {slot.label()}",
-                payload={"call_id": call.id, "from": call.from_number,
-                         "caller_name": call.caller_name,
-                         "site": order.site_address, "trade": q.trade,
-                         "priority": q.urgency,
-                         "slot": {"tech": slot.tech, "start": slot.start,
-                                  "end": slot.end}},
-                requester="missed-call-textback")
+                payload=booking_payload,
+                requester="missed-call-textback", editable=False)
             if not approved:
                 run_log.step("book", status="skipped", call_id=call.id,
                              reason="approval denied — no job created")
@@ -192,14 +202,18 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             # -- confirmation SMS (also gated) ----------------------------------
             confirm_text = (f"You're booked for {slot.label()}. "
                             f"Reply here if anything changes.")
+            # Send from the payload dict, same contract as the first SMS.
+            confirm_payload = {"to": call.from_number, "text": confirm_text,
+                               "call_id": call.id,
+                               "job_ref": entry.get("job_ref")}
             approved = await gate.require(
                 "sms.booking_confirm", "quo-sms",
                 f"Text {call.from_number}: {confirm_text[:90]}",
-                payload={"to": call.from_number, "text": confirm_text,
-                         "call_id": call.id, "job_ref": entry.get("job_ref")},
+                payload=confirm_payload,
                 requester="missed-call-textback")
             if approved:
-                res = await QuoNotifier().send(call.from_number, confirm_text)
+                res = await QuoNotifier().send(confirm_payload["to"],
+                                               confirm_payload["text"])
                 run_log.step("confirm_sms", status=res.status, to=call.from_number)
             else:
                 run_log.step("confirm_sms", status="skipped",

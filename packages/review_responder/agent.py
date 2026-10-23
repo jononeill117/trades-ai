@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from core import trust as trust_mod
@@ -101,14 +102,18 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                      lane=draft.lane, provider=draft.provider,
                      warnings=draft.warnings)
 
+        # Publish from the payload dict (WS7 T-1 fix-up): an approver
+        # edit is copied back into this dict by the gate, and the publish
+        # below is built from it — not from the pre-approval draft.
+        reply_payload = {"review_id": review.id, "stars": review.stars,
+                         "lane": draft.lane, "reply": draft.text,
+                         "review_text": review.text[:200]}
         approved = await trust_mod.require(
             gate, trust, run_log,
             "review.publish", "gbp",
             f"[{draft.lane}] Reply to {review.stars}★ review by "
             f"{review.author}: {draft.text[:100]}",
-            payload={"review_id": review.id, "stars": review.stars,
-                     "lane": draft.lane, "reply": draft.text,
-                     "review_text": review.text[:200]},
+            payload=reply_payload,
             requester="review-responder")
         if not approved:
             run_log.step("publish", status="skipped", review=review.id,
@@ -135,7 +140,9 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
         t0 = time.monotonic()
         try:
             driver = as_driver(page)
-            status = await adapter.publish(driver, review, draft)
+            # The approved reply text — the draft as edited, if it was.
+            status = await adapter.publish(
+                driver, review, replace(draft, text=reply_payload["reply"]))
         finally:
             await session.close()
             run_log.usage("browser", session.id, time.monotonic() - t0)

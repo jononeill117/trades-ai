@@ -38,8 +38,35 @@ proposals:
   invoice.reminder.email: "auto-send the friendly (first-touch) email reminder, keep gating firm/final steps."
   invoice.reminder.sms: "auto-send friendly SMS reminders, keep gating final notices."
   quote.deliver: "auto-deliver quotes under a price ceiling you set, keep gating anything larger."
-  sms.textback: "auto-send the standard textback template, keep gating anything off-template."
-  social.post: "auto-post completed-job photos, keep gating anything with a customer name."
+  sms.textback: "auto-send missed-call textbacks (this action only ever sends the configured standard template)."
+  social.post: "auto-post completed-job photos."
+
+# Payload scopes for `auto` grants. A proposal above promises a scoped
+# loosening ("5-star only", "friendly only", "under a ceiling"), so the
+# grant enforces exactly that scope: when an action's level is `auto`,
+# only payloads inside its scope run unattended. Anything outside the
+# scope — or anything the scope cannot verify — falls back to the human
+# approval gate. It is NOT denied; it just asks, like today.
+#
+# Rule language (every rule must hold):
+#   field: [a, b]   payload[field] must be one of the values
+#   field: a        payload[field] must equal a
+#   field_max: n    payload[field] must be a number <= n
+#   field_min: n    payload[field] must be a number >= n
+# A null rule value (e.g. a ceiling nobody has set yet) never matches, so
+# the action stays gated until the owner fills it in.
+scopes:
+  review.publish:
+    stars: [5]
+  invoice.reminder.email:
+    tone: [friendly]
+  invoice.reminder.sms:
+    tone: [friendly]
+  quote.deliver:
+    total_max:            # set a dollar ceiling here to enable scoped auto
+  # sms.textback / social.post carry no scope: those packages call the
+  # approval gate directly, and their payloads carry no field a scope
+  # could check — so their proposals promise no payload scoping.
 
 # Optional: import decisions made before the ledger existed (first run only
 # — delete this block to start cold). These numbers seed the demo so a

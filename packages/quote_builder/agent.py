@@ -137,14 +137,24 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
 
     # -- approval + delivery -------------------------------------------------------
     to = job.get("email") or cfg.get("fallback_email", "customer@example.com")
+    # The payload carries the actual send fields (WS7 T-1 fix-up): before,
+    # it held only a summary (to/total/items), so an approver edit had
+    # nothing to land in and the pre-rendered md went out regardless.
+    # Now the gate copies an approved edit back into this dict and the
+    # send uses exactly what was approved.
+    quote_payload = {"to": to,
+                     "subject": f"Quote {job.get('job_id')} — "
+                                f"${quote['total']:,.2f}",
+                     "body": md,
+                     "total": quote["total"],
+                     "items": [l.get("item") for l in quote["lines"]],
+                     "unconfirmed": [u["item"] for u in uncertain]}
     approved = await trust_mod.require(
         gate, trust, run_log,
         "quote.deliver", "gmail",
         f"Deliver quote {job.get('job_id')} to {to} — total ${quote['total']:,.2f} "
         f"({len(quote['lines'])} lines, {len(uncertain)} unconfirmed)",
-        payload={"to": to, "total": quote["total"],
-                 "items": [l.get("item") for l in quote["lines"]],
-                 "unconfirmed": [u["item"] for u in uncertain]},
+        payload=quote_payload,
         requester="quote-builder")
     delivered = False
     if not approved:
@@ -152,8 +162,9 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                      reason="approval denied — quote rendered but not sent")
     else:
         res = await GmailNotifier().send(
-            to, f"Quote {job.get('job_id')} — ${quote['total']:,.2f}", md)
-        run_log.step("deliver", status=res.status, to=to)
+            quote_payload["to"], quote_payload["subject"],
+            quote_payload["body"])
+        run_log.step("deliver", status=res.status, to=quote_payload["to"])
         # Delivered means the send actually succeeded. A failed send — or
         # one never attempted (notifier unconfigured, status "skipped") —
         # must NOT be recorded as delivered: doing so suppresses every
