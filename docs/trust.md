@@ -58,6 +58,15 @@ levels:
   review.publish: gate    # revoke — back to full approvals
 ```
 
+The specific wording is a promise, so the grant enforces it: `scopes:`
+in the same file attaches a payload scope to an action (e.g.
+`review.publish: {stars: [5]}`, `quote.deliver: {total_max: 500}`).
+Under an `auto` grant, only payloads inside the scope run unattended;
+anything outside it — or anything the scope cannot verify, like a price
+ceiling nobody has set yet — falls back to the human approval gate
+instead of sending. See the `scopes:` comments in
+`config/autonomy.yaml` for the rule language.
+
 A denial or an edit on an action with an open proposal **withdraws the
 proposal** — the signal changed, so the offer is stale. It will propose
 again only if confidence crosses the bar again.

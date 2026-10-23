@@ -13,6 +13,13 @@ revokes per action in `config/autonomy.yaml` (`gate` <-> `auto`). `auto`
 actions still log fully and are marked `trust_auto` in the run log, and
 denials/edits push confidence right back down.
 
+A grant can carry a payload **scope** (`scopes:` in the same config): the
+proposal text promises one (5-star replies only, friendly reminders only,
+quotes under a ceiling), so the grant must enforce it. An `auto` action
+with a scope only auto-runs payloads inside the scope; anything outside
+— or anything the scope cannot verify — falls back to the human gate.
+That is the promise the owner accepted when they flipped the switch.
+
 See docs/trust.md.
 """
 
@@ -75,6 +82,12 @@ class TrustLedger:
         Anything not explicitly granted stays gated."""
         return "auto" if (self.cfg.get("levels") or {}).get(action) == "auto" \
             else "gate"
+
+    def scope(self, action: str) -> dict:
+        """The payload scope attached to this action's grant
+        (config/autonomy.yaml `scopes:`), or {} when the grant is
+        unscoped. See `scope_allows` for the rule language."""
+        return dict((self.cfg.get("scopes") or {}).get(action) or {})
 
     # -- recording ----------------------------------------------------------
 
@@ -144,6 +157,48 @@ def get_ledger(cfg: dict | None = None, path: Path | None = None) -> TrustLedger
     return TrustLedger(path=path, cfg=cfg)
 
 
+def scope_allows(scope: dict | None, payload: dict[str, Any] | None) -> bool:
+    """Does this payload fall inside the owner's granted scope?
+
+    Rule language (every rule must hold):
+    - ``"field": [v, ...]`` — payload[field] must be one of the values
+    - ``"field": v``        — payload[field] must equal v
+    - ``"field_max": n``    — payload[field] must be a number <= n
+    - ``"field_min": n``    — payload[field] must be a number >= n
+
+    Anything unverifiable fails — a missing field, a non-numeric value
+    under a numeric rule, or a rule value of None (e.g. a price ceiling
+    the owner has not set yet). Failing scope never denies the action;
+    `require` routes it to the human gate instead of auto-running it.
+    """
+    if not scope:
+        return True
+    if not isinstance(payload, dict):
+        return False
+    for key, rule in scope.items():
+        if rule is None:
+            return False
+        if key.endswith("_max") or key.endswith("_min"):
+            value = payload.get(key[:-4])
+            if isinstance(value, bool) \
+                    or not isinstance(value, (int, float)):
+                return False
+            if key.endswith("_max") and value > rule:
+                return False
+            if key.endswith("_min") and value < rule:
+                return False
+            continue
+        if key not in payload:
+            return False
+        value = payload[key]
+        if isinstance(rule, (list, tuple, set)):
+            if value not in rule:
+                return False
+        elif value != rule:
+            return False
+    return True
+
+
 async def require(gate, trust: TrustLedger, run_log, action: str,
                   channel: str, summary: str,
                   payload: dict[str, Any] | None = None,
@@ -152,18 +207,26 @@ async def require(gate, trust: TrustLedger, run_log, action: str,
 
     - `auto` actions (owner-granted in config/autonomy.yaml) pass without a
       human decision, but are still logged and clearly marked `trust_auto`.
+      If the grant carries a payload scope, only payloads inside the scope
+      auto-run; anything outside (or unverifiable) falls through to the
+      human gate below — the scope is what the proposal promised.
     - `gate` actions go through the normal approval gate; the decision —
       approved unchanged / approved after edit / denied — is recorded in
       the ledger, and a proposal event fires when confidence crosses the
       configured threshold.
     """
     if trust.level(action) == "auto":
-        trust.record(action, "auto")
-        trust.save()
-        run_log.step("trust_auto", status="ok", action=action,
-                     note="owner granted `auto` in config/autonomy.yaml — "
-                          "executed without a human decision, fully logged")
-        return True
+        scope = trust.scope(action)
+        if scope_allows(scope, payload):
+            trust.record(action, "auto")
+            trust.save()
+            run_log.step("trust_auto", status="ok", action=action,
+                         note="owner granted `auto` in config/autonomy.yaml — "
+                              "executed without a human decision, fully logged")
+            return True
+        run_log.step("trust_scope", status="would", action=action,
+                     note="payload outside the scope granted in "
+                          "config/autonomy.yaml — routed to the approval gate")
 
     approved = await gate.require(action, channel, summary,
                                   payload=payload, requester=requester)

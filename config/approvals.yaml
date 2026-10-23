@@ -4,8 +4,10 @@
 # backend: auto | mock | cli | slack
 #   auto  — mock backend in --mock mode, cli in --live mode (default)
 #   mock  — prints the exact request, decides per mock_decision
-#   cli   — terminal y/n prompt
+#   cli   — terminal y/n prompt; 'e' opens the payload in $EDITOR and
+#           only the edited payload, re-confirmed, can be approved
 #   slack — posts to SLACK_WEBHOOK_URL, waits for a decision file
+#           carrying the per-request token from the Slack message
 #           (see core/approvals.py for the file-drop contract)
 backend: auto
 
