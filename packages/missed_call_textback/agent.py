@@ -27,10 +27,12 @@ from core.config import load_yaml, repo_root
 from core.drivers import as_driver
 from core.notify import QuoNotifier, SlackNotifier
 
+from packages.dispatch import desktop_fallback
 from packages.dispatch.mock_portal_server import serve, serve_in_sandbox
-from packages.dispatch.models import WorkOrder
+from packages.dispatch.models import NeedsDesktopError, WorkOrder
 from packages.dispatch.portals import get_adapter
-from packages.dispatch.schedule import load_availability, propose_slots
+from packages.dispatch.schedule import (load_availability, propose_slots,
+                                        record_booking)
 
 from .models import MissedCall
 from .qualify import qualify
@@ -63,6 +65,7 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
     results = {"processed": 0, "booked": 0, "escalated": 0, "skipped": 0}
     keepalive = None
     adapter = None
+    portal_url = ""
     try:
         for call in events:
             entry: dict = {"call_id": call.id}
@@ -140,6 +143,7 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                 else:
                     url = cfg.get("portal_base_url", "")
                 adapter = get_adapter(cfg.get("portal", "mock"), url)
+                portal_url = url
 
             order = WorkOrder(
                 source_id=call.id, customer_name=call.caller_name or call.from_number,
@@ -181,10 +185,20 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                 results["skipped"] += 1
                 continue
 
+            # -- book + confirm in the portal (cloud browser) ------------------
+            # T-2 standard (WS7 follow-up): creating the job is not booking
+            # it. The booked count and the "You're booked" SMS both require
+            # the portal's own confirmation — confirm_booking's read-back
+            # status must start with "booked". A GUI-only confirm defers to
+            # the desktop fallback after the browser session closes, exactly
+            # as in dispatch; an unverified fallback result stays pending
+            # and is never counted.
             session, page = await core.browser(
                 profile_name=cfg.get("portal_profile"), recording=True)
             run_log.session("browser", session.id)
             t0 = time.monotonic()
+            needs_desktop = False
+            status = None
             try:
                 driver = as_driver(page)
                 await adapter.login(driver)
@@ -192,36 +206,68 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                 entry["job_ref"] = job_ref
                 run_log.step("book", call_id=call.id, ref=job_ref,
                              slot=slot.label())
+                try:
+                    status = await adapter.confirm_booking(driver, job_ref)
+                except NeedsDesktopError:
+                    # GUI-only step -> deferred to desktop fallback below,
+                    # after the browser session is closed.
+                    needs_desktop = True
+                entry["job_status"] = status
             finally:
                 await session.close()
                 run_log.usage("browser", session.id, time.monotonic() - t0)
                 replay = await core.replay_url(session.id)
                 run_log.session("browser", session.id, replay_url=replay)
                 entry["replay_url"] = replay
+            if needs_desktop:
+                run_log.step("confirm", status="would", call_id=call.id,
+                             via="desktop-fallback")
+                board_url = job_ref.rstrip("/") + "/board"
+                status = await desktop_fallback.confirm_on_dispatch_board(
+                    core, run_log, board_url, portal_url)
+                entry["job_status"] = status
+            run_log.step("confirm", call_id=call.id,
+                         status="ok" if str(status).startswith("booked")
+                         else "error",
+                         job_status=status)
+            booked = str(status).startswith("booked")
+            if entry.get("job_ref"):
+                # The job now exists in the portal and holds this slot:
+                # record it into the run's availability so a later call in
+                # this same run is not proposed the very same slot (T-2).
+                record_booking(availability, slot, entry["job_ref"])
 
-            # -- confirmation SMS (also gated) ----------------------------------
-            confirm_text = (f"You're booked for {slot.label()}. "
-                            f"Reply here if anything changes.")
-            # Send from the payload dict, same contract as the first SMS.
-            confirm_payload = {"to": call.from_number, "text": confirm_text,
-                               "call_id": call.id,
-                               "job_ref": entry.get("job_ref")}
-            approved = await gate.require(
-                "sms.booking_confirm", "quo-sms",
-                f"Text {call.from_number}: {confirm_text[:90]}",
-                payload=confirm_payload,
-                requester="missed-call-textback")
-            if approved:
-                res = await QuoNotifier().send(confirm_payload["to"],
-                                               confirm_payload["text"])
-                run_log.step("confirm_sms", status=res.status, to=call.from_number)
+            # -- confirmation SMS (gated; portal-confirmed bookings only) -----
+            if booked:
+                confirm_text = (f"You're booked for {slot.label()}. "
+                                f"Reply here if anything changes.")
+                # Send from the payload dict, same contract as the first SMS.
+                confirm_payload = {"to": call.from_number, "text": confirm_text,
+                                   "call_id": call.id,
+                                   "job_ref": entry.get("job_ref"),
+                                   "job_status": status}
+                approved = await gate.require(
+                    "sms.booking_confirm", "quo-sms",
+                    f"Text {call.from_number}: {confirm_text[:90]}",
+                    payload=confirm_payload,
+                    requester="missed-call-textback")
+                if approved:
+                    res = await QuoNotifier().send(confirm_payload["to"],
+                                                   confirm_payload["text"])
+                    run_log.step("confirm_sms", status=res.status,
+                                 to=call.from_number)
+                else:
+                    run_log.step("confirm_sms", status="skipped",
+                                 reason="approval denied — booking stands, no SMS")
             else:
-                run_log.step("confirm_sms", status="skipped",
-                             reason="approval denied — booking stands, no SMS")
+                run_log.step("confirm_sms", status="skipped", call_id=call.id,
+                             reason=f"booking not portal-confirmed "
+                                    f"(status: {status}) — no SMS")
 
             state.mark(call.id)
             results["processed"] += 1
-            results["booked"] += 1
+            if booked:
+                results["booked"] += 1
 
         run_log.finish("ok", **results)
         return results
