@@ -84,6 +84,19 @@ def load_availability(cfg: dict[str, Any]) -> Availability:
     )
 
 
+def record_booking(avail: Availability, slot: Slot, ref: str) -> None:
+    """Mark a slot as taken for the rest of the run.
+
+    Availability is loaded once per run; without this, a second order in
+    the same run is proposed (and booked into) the exact slot the first
+    order just took. The window label uses the same "tech|ref" shape
+    load_availability gives pre-existing jobs, so slot_conflicts and
+    _tech_bookings treat it identically.
+    """
+    avail.bookings.append(Window(_dt(slot.start), _dt(slot.end),
+                                 f"{slot.tech}|{ref}"))
+
+
 def _overlaps(a_start: datetime, a_end: datetime, b: Window) -> bool:
     return a_start < b.end and b.start < a_end
 

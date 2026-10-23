@@ -33,13 +33,13 @@ async def confirm_on_dispatch_board(core, run_log, board_url: str, portal_base_u
         desk = await core.desktop(record=True)
     except Exception as e:
         # Solari accounts with a concurrency limit of 1 cannot hold the
-        # portal sandbox and a desktop open at once. The job was already
-        # created in the portal via the browser; the desktop confirmation
-        # is a demo flourish, not a correctness requirement.
+        # portal sandbox and a desktop open at once. The job exists in the
+        # portal but was never confirmed — report it as still pending,
+        # never as booked: only a portal-confirmed status may be "booked".
         if "concurrent" in str(e).lower() or "ConcurrencyLimit" in type(e).__name__:
             run_log.step("desktop_fallback", status="skipped",
                          reason="concurrency limit: portal sandbox already holds the single session")
-            return "booked (desktop confirmation skipped — concurrency limit)"
+            return "pending_board (desktop confirmation skipped — concurrency limit)"
         raise
     run_log.session("desktop", desk.sessionId,
                     replay_url=getattr(desk, "recordingUrl", None),
@@ -83,7 +83,9 @@ async def confirm_on_dispatch_board(core, run_log, board_url: str, portal_base_u
         await asyncio.sleep(3)
         shot = await desk.screenshot(format="png")
         run_log.step("desktop_screenshot", bytes=len(shot))
-        return "booked (unverified — check the recording)"
+        # The Enter press was never verified against the portal, so the job
+        # stays pending until something reads back a confirmed status.
+        return "pending_board (unverified — check the recording)"
     finally:
         await core.destroy_desktop(desk)
         run_log.usage("desktop", desk.sessionId, time.monotonic() - desk_t0)

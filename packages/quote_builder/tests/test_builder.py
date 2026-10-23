@@ -16,6 +16,27 @@ def _run(coro):
     return asyncio.run(coro)
 
 
+class _FakeGmail:
+    """GmailNotifier stand-in returning a fixed SendResult status."""
+
+    def __init__(self, status, counter):
+        self._status = status
+        self._counter = counter
+
+    async def send(self, to, subject, body, sender=None):
+        from core.notify.base import SendResult
+        self._counter.append(to)
+        return SendResult(self._status, "gmail", "fake notifier")
+
+
+def _stub_gmail(monkeypatch, status):
+    """Patch the quote agent's notifier; returns the list of attempted tos."""
+    attempts: list[str] = []
+    monkeypatch.setattr(agent, "GmailNotifier",
+                        lambda: _FakeGmail(status, attempts))
+    return attempts
+
+
 HIST_DIR = repo_root() / "packages/quote_builder/fixtures/history"
 BANDS, JOBS = load_history(HIST_DIR)
 
@@ -72,6 +93,7 @@ def test_mock_run_end_to_end(tmp_path, monkeypatch):
     from core.audit import RunLog
     from core.mock_solari import MockSolari
     monkeypatch.setattr(agent, "STATE", tmp_path / "qb_state.json")
+    _stub_gmail(monkeypatch, "sent")
 
     log = RunLog("quote-builder", "mock", runs_dir=tmp_path)
     result = _run(agent.run(MockSolari(), log, {"mode": "mock"}))
@@ -136,6 +158,7 @@ def test_identical_quote_not_redelivered(tmp_path, monkeypatch):
     from core.audit import RunLog
     from core.mock_solari import MockSolari
     monkeypatch.setattr(agent, "STATE", tmp_path / "qb_state.json")
+    _stub_gmail(monkeypatch, "sent")
 
     log1 = RunLog("quote-builder", "mock", runs_dir=tmp_path)
     r1 = _run(agent.run(MockSolari(), log1, {"mode": "mock"}))
@@ -146,3 +169,43 @@ def test_identical_quote_not_redelivered(tmp_path, monkeypatch):
     assert r2["duplicate"] is True and r2["delivered"] is False
     events = [json.loads(l) for l in log2.path.read_text().splitlines()]
     assert not any(e["step"] == "approval_request" for e in events)
+
+
+def test_failed_send_is_not_recorded_as_delivered(tmp_path, monkeypatch):
+    # A send that fails (SMTP error) must not suppress future delivery:
+    # the state record may only claim delivery on a confirmed "sent".
+    from core.audit import RunLog
+    from core.mock_solari import MockSolari
+    state_path = tmp_path / "qb_state.json"
+    monkeypatch.setattr(agent, "STATE", state_path)
+    attempts = _stub_gmail(monkeypatch, "error")
+
+    log1 = RunLog("quote-builder", "mock", runs_dir=tmp_path)
+    r1 = _run(agent.run(MockSolari(), log1, {"mode": "mock"}))
+    assert r1["delivered"] is False
+    assert len(attempts) == 1
+    state = json.loads(state_path.read_text())
+    assert list(state["delivered"].values())[0]["delivered"] is False
+
+    # Second run retries the delivery instead of calling it a duplicate.
+    log2 = RunLog("quote-builder", "mock", runs_dir=tmp_path)
+    r2 = _run(agent.run(MockSolari(), log2, {"mode": "mock"}))
+    assert r2["delivered"] is False
+    assert not r2.get("duplicate")
+    assert len(attempts) == 2
+
+
+def test_unattempted_send_is_not_recorded_as_delivered(tmp_path, monkeypatch):
+    # Notifier unconfigured -> SendResult "skipped": nothing was ever
+    # attempted, so the quote must stay deliverable on a later run.
+    from core.audit import RunLog
+    from core.mock_solari import MockSolari
+    state_path = tmp_path / "qb_state.json"
+    monkeypatch.setattr(agent, "STATE", state_path)
+    _stub_gmail(monkeypatch, "skipped")
+
+    log = RunLog("quote-builder", "mock", runs_dir=tmp_path)
+    result = _run(agent.run(MockSolari(), log, {"mode": "mock"}))
+    assert result["delivered"] is False
+    state = json.loads(state_path.read_text())
+    assert list(state["delivered"].values())[0]["delivered"] is False

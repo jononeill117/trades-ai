@@ -146,6 +146,7 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                  "items": [l.get("item") for l in quote["lines"]],
                  "unconfirmed": [u["item"] for u in uncertain]},
         requester="quote-builder")
+    delivered = False
     if not approved:
         run_log.step("deliver", status="skipped",
                      reason="approval denied — quote rendered but not sent")
@@ -153,11 +154,16 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
         res = await GmailNotifier().send(
             to, f"Quote {job.get('job_id')} — ${quote['total']:,.2f}", md)
         run_log.step("deliver", status=res.status, to=to)
+        # Delivered means the send actually succeeded. A failed send — or
+        # one never attempted (notifier unconfigured, status "skipped") —
+        # must NOT be recorded as delivered: doing so suppresses every
+        # future delivery attempt for this quote via the check above.
+        delivered = res.status == "sent"
 
     state["delivered"][job_key] = {"fingerprint": fingerprint,
-                                   "delivered": bool(approved)}
+                                   "delivered": delivered}
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(json.dumps(state, indent=2))
 
-    run_log.finish("ok", total=quote["total"], delivered=approved)
-    return {"quote": quote, "markdown": str(md_path), "delivered": approved}
+    run_log.finish("ok", total=quote["total"], delivered=delivered)
+    return {"quote": quote, "markdown": str(md_path), "delivered": delivered}

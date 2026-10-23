@@ -51,15 +51,74 @@ def test_skip_on_concurrency_limit(tmp_path):
     run_log = _run_log(tmp_path)
     status = asyncio.run(desktop_fallback.confirm_on_dispatch_board(
         core, run_log, "http://portal.example/jobs/JOB-1/board", "http://portal.example"))
-    # The job was already booked via the browser — the fallback degrades to a
-    # booked status instead of raising.
-    assert status.startswith("booked")
+    # The job exists in the portal but was never confirmed — the fallback
+    # must report it as still pending, never as booked: only a
+    # portal-confirmed status may be reported as booked.
+    assert status.startswith("pending_board")
+    assert not status.startswith("booked")
     assert "concurrency" in status.lower()
     assert core.desktop_calls == 1
     # ...and the skip is in the audit trail.
     entry = [json.loads(line) for line in _log_text(run_log).splitlines()
              if '"desktop_fallback"' in line][0]
     assert entry["status"] == "skipped"
+
+
+class _LiveDesk:
+    """A 'real' desktop: no `.actions` attribute, so the live branch runs."""
+
+    sessionId = "live_desk_1"
+    recordingUrl = None
+    streamUrl = None
+
+    def __init__(self):
+        self.keys = []
+        self.keyboard = self
+
+    async def health(self):
+        return type("H", (), {"ready": True})()
+
+    async def exec(self, *args, **kwargs):
+        return type("R", (), {"stdout": "google-chrome\n"})()
+
+    async def type(self, text):
+        self.keys.append(text)
+
+    async def press(self, key):
+        self.keys.append(key)
+
+    async def screenshot(self, format="png"):
+        return b"PNG"
+
+
+class _LiveCore:
+    def __init__(self):
+        self.desk = _LiveDesk()
+        self.destroyed = False
+
+    async def desktop(self, **kwargs):
+        return self.desk
+
+    async def destroy_desktop(self, desk):
+        self.destroyed = True
+
+
+def test_live_desktop_path_reports_unverified_as_pending(tmp_path, monkeypatch):
+    # The live branch presses Enter on the board but never reads the
+    # portal's verdict back — that is not a confirmed booking.
+    async def _no_sleep(_seconds):
+        return None
+
+    monkeypatch.setattr(asyncio, "sleep", _no_sleep)
+    core = _LiveCore()
+    run_log = _run_log(tmp_path)
+    status = asyncio.run(desktop_fallback.confirm_on_dispatch_board(
+        core, run_log, "http://portal.example/jobs/JOB-1/board",
+        "http://portal.example"))
+    assert status.startswith("pending_board")
+    assert not status.startswith("booked")
+    assert "unverified" in status
+    assert core.destroyed
 
 
 def test_non_limit_error_still_raises(tmp_path):
