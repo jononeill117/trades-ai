@@ -139,14 +139,19 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
             continue
 
         to = inv.email if reminder.channel == "email" else inv.phone
+        # Send from the payload dict (WS7 T-1 fix-up): an approver edit is
+        # copied back into this dict by the gate, and the send below uses
+        # exactly what was approved — not the pre-approval reminder fields.
+        reminder_payload = {"invoice_id": inv.invoice_id, "to": to,
+                            "subject": reminder.subject,
+                            "body": reminder.body,
+                            "tone": reminder.tone}
         approved = await trust_mod.require(
             gate, trust, run_log,
             f"invoice.reminder.{reminder.channel}", reminder.channel,
             f"{reminder.tone} reminder to {inv.customer} ({to}) — "
             f"{inv.invoice_id} ${inv.amount:,.2f}, step {reminder.step}",
-            payload={"invoice_id": inv.invoice_id, "to": to,
-                     "subject": reminder.subject, "body": reminder.body,
-                     "tone": reminder.tone},
+            payload=reminder_payload,
             requester="invoice-chaser")
         if not approved:
             run_log.step("remind", status="skipped", invoice=inv.invoice_id,
@@ -155,9 +160,11 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
 
         if reminder.channel == "email":
             res = await GmailNotifier().send(
-                to, reminder.subject, reminder.body)
+                reminder_payload["to"], reminder_payload["subject"],
+                reminder_payload["body"])
         else:
-            res = await QuoNotifier().send(to, reminder.body)
+            res = await QuoNotifier().send(
+                reminder_payload["to"], reminder_payload["body"])
         run_log.step("remind", status=res.status, invoice=inv.invoice_id,
                      step=reminder.step, channel=reminder.channel,
                      tone=reminder.tone)

@@ -167,9 +167,12 @@ def scope_allows(scope: dict | None, payload: dict[str, Any] | None) -> bool:
     - ``"field_min": n``    — payload[field] must be a number >= n
 
     Anything unverifiable fails — a missing field, a non-numeric value
-    under a numeric rule, or a rule value of None (e.g. a price ceiling
-    the owner has not set yet). Failing scope never denies the action;
-    `require` routes it to the human gate instead of auto-running it.
+    under a numeric rule, a rule value of None (e.g. a price ceiling
+    the owner has not set yet), or a non-numeric rule value (e.g. a
+    ceiling quoted in YAML, `total_max: "500"`, which parses as a
+    string: the bound must be a YAML number). Failing scope never
+    denies the action and never raises; `require` routes it to the
+    human gate instead of auto-running it.
     """
     if not scope:
         return True
@@ -182,6 +185,13 @@ def scope_allows(scope: dict | None, payload: dict[str, Any] | None) -> bool:
             value = payload.get(key[:-4])
             if isinstance(value, bool) \
                     or not isinstance(value, (int, float)):
+                return False
+            # The bound itself must be a number. Comparing against a
+            # non-numeric rule (a quoted YAML string) raises TypeError;
+            # an unverifiable rule means NOT in scope — route to the
+            # gate, never raise, never auto-approve.
+            if isinstance(rule, bool) \
+                    or not isinstance(rule, (int, float)):
                 return False
             if key.endswith("_max") and value > rule:
                 return False
@@ -202,7 +212,8 @@ def scope_allows(scope: dict | None, payload: dict[str, Any] | None) -> bool:
 async def require(gate, trust: TrustLedger, run_log, action: str,
                   channel: str, summary: str,
                   payload: dict[str, Any] | None = None,
-                  requester: str = "agent") -> bool:
+                  requester: str = "agent",
+                  editable: bool = True) -> bool:
     """The trust-aware gate packages call instead of `gate.require`.
 
     - `auto` actions (owner-granted in config/autonomy.yaml) pass without a
@@ -229,7 +240,8 @@ async def require(gate, trust: TrustLedger, run_log, action: str,
                           "config/autonomy.yaml — routed to the approval gate")
 
     approved = await gate.require(action, channel, summary,
-                                  payload=payload, requester=requester)
+                                  payload=payload, requester=requester,
+                                  editable=editable)
     decision = getattr(gate, "last_decision", None)
     if not approved:
         outcome = "denied"

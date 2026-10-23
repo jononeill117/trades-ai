@@ -13,6 +13,11 @@ Backends (config/approvals.yaml):
              $EDITOR; only the edited payload can then be approved, and
              only after a second confirmation of exactly what will be
              sent. No editor, a failed edit, or no confirmation -> denied.
+             Actions whose payload is a structured object the sender does
+             not consume as fields (the booking gates) pass
+             `editable=False`: `e` is then refused with an explanation
+             and the request is denied — never silently approved with
+             the edit ignored.
 - `slack`  — posts the request to the ops webhook, then waits for a decision
              file at out/approvals/<id>.json ({"approved": true, "by": "..."})
              until `slack_timeout_s`. True interactive Slack buttons need a
@@ -58,6 +63,11 @@ class ApprovalRequest:
     summary: str                # one line a human can approve on
     payload: dict[str, Any] = field(default_factory=dict)
     requester: str = "agent"
+    # False when the caller cannot honor an edited payload (the booking
+    # gates: the send proceeds from order/slot objects, not from payload
+    # fields). Backends must refuse edits for such requests — approving
+    # while dropping the edit is the blind-approval bug, in reverse.
+    editable: bool = True
     id: str = field(default_factory=lambda: f"apr-{uuid.uuid4().hex[:8]}")
     ts: str = field(default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%S%z"))
 
@@ -111,7 +121,9 @@ class CliApprovalBackend:
     as displayed. The decision then carries the edited payload, and the
     gate hands exactly that to the sender. No editor configured, an editor
     error, invalid edited JSON, or no confirmation all deny — the original
-    draft is never sent on an edit answer.
+    draft is never sent on an edit answer. For requests marked
+    `editable=False` (the booking gates), `e` is refused with an
+    explanation and the request denied, for the same reason.
     """
     name = "cli"
 
@@ -128,13 +140,29 @@ class CliApprovalBackend:
         if req.payload:
             for k, v in req.payload.items():
                 print(f"  {k}: {v}", file=sys.stderr)
+        prompt = (f"Approve {req.action}? [y/e(dit)/N] " if req.editable
+                  else f"Approve {req.action}? [y/N] ")
         try:
-            answer = await asyncio.to_thread(
-                self._input, f"Approve {req.action}? [y/e(dit)/N] ")
+            answer = await asyncio.to_thread(self._input, prompt)
         except (EOFError, OSError):
             return ApprovalDecision(False, decided_by="cli", note="no tty — fail closed")
         a = answer.strip().lower()
         if a in ("e", "edit", "edited"):
+            if not req.editable:
+                # The caller sends from structured objects, not from this
+                # payload, so an edit here could never reach the send.
+                # Refuse loudly and fail closed: the operator approves
+                # the booking exactly as shown, or denies it and fixes
+                # the order upstream. Silently approving the unedited
+                # payload on an edit answer is the one forbidden outcome.
+                print(f"  edit refused: {req.action} is not editable — its "
+                      f"payload is a structured booking, not send fields. "
+                      f"Approve it exactly as shown, or deny it and fix "
+                      f"the order upstream.", file=sys.stderr)
+                return ApprovalDecision(
+                    False, decided_by="cli",
+                    note="edit refused — action is not editable; "
+                         "nothing sent")
             return await self._edit_flow(req)
         ok = a in ("y", "yes")
         return ApprovalDecision(ok, decided_by="cli", note=answer.strip())
@@ -258,6 +286,14 @@ class SlackApprovalBackend:
                         await asyncio.sleep(2)
                         continue
                     edited_payload = data.get("payload")
+                    if isinstance(edited_payload, dict) and not req.editable:
+                        # Same rule as the CLI backend: an edit this
+                        # caller cannot honor must never be dropped
+                        # silently while the original is approved.
+                        return ApprovalDecision(
+                            False, decided_by=f"slack:{data.get('by', '?')}",
+                            note="edited payload refused — action is not "
+                                 "editable; nothing sent")
                     edited = isinstance(edited_payload, dict) \
                         and bool(data.get("approved"))
                     return ApprovalDecision(
@@ -290,7 +326,8 @@ class ApprovalGate:
 
     async def require(self, action: str, channel: str, summary: str,
                       payload: dict[str, Any] | None = None,
-                      requester: str = "agent") -> bool:
+                      requester: str = "agent",
+                      editable: bool = True) -> bool:
         """Ask for approval. Returns True only when approved.
 
         Payload contract: pass the dict you will send from. If the
@@ -298,10 +335,18 @@ class ApprovalGate:
         copied back into that same dict in place before this returns —
         so send from the dict, never from values captured before the
         call, or you would send a draft the human never approved.
+
+        Callers that cannot send from payload fields (the booking gates,
+        whose sends proceed from structured order/slot objects) must
+        pass `editable=False`: edit answers are then refused with an
+        explanation and the request denied, and a backend that returns
+        an edited payload anyway fails closed here — an edit is never
+        silently dropped while the original goes out.
         """
         payload = payload if payload is not None else {}
         req = ApprovalRequest(action=action, channel=channel, summary=summary,
-                              payload=payload, requester=requester)
+                              payload=payload, requester=requester,
+                              editable=editable)
         if action in self.preapproved:
             decision = ApprovalDecision(True, decided_by="preapproved",
                                         note=f"{action} is in preapproved_actions")
@@ -314,6 +359,15 @@ class ApprovalGate:
             except Exception as exc:
                 decision = ApprovalDecision(False, decided_by=self.backend.name,
                                             note=f"backend error: {exc} — fail closed")
+        if decision.approved and decision.payload is not None \
+                and not editable:
+            # Defense in depth: a backend returned an edit for an action
+            # whose caller cannot apply it. Approving would send the
+            # original while the human believes the edit went out.
+            decision = ApprovalDecision(
+                False, decided_by=decision.decided_by,
+                note="backend returned an edited payload for a "
+                     "non-editable action — fail closed, nothing sent")
         if decision.approved and decision.payload is not None:
             # The human approved the edited payload, not the draft: swap
             # it into the caller's dict so the send uses what was seen.
