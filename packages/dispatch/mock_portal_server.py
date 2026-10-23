@@ -32,6 +32,18 @@ STATE: dict = {"jobs": {}, "settings": {"gui_confirm_required": True}, "counter"
 DEMO_EMAIL = "dispatcher@yourshop.example"
 DEMO_PASSWORD = "demo-password"
 
+# POST bodies here are a handful of short form fields. Anything bigger is
+# not a form post — refuse it instead of reading unbounded bytes from an
+# unauthenticated socket into memory.
+MAX_FORM_BYTES = 64 * 1024
+# Seconds a connection may sit idle mid-request before the socket closes;
+# a body that never finishes arriving must not pin a handler thread.
+REQUEST_TIMEOUT_S = 10
+
+
+class _FormTooLarge(Exception):
+    """Content-Length is missing/invalid or exceeds MAX_FORM_BYTES."""
+
 LOGIN_PAGE = """<!doctype html><title>FieldDesk — sign in</title>
 <h1>FieldDesk</h1><p>Field-service portal (demo)</p>
 <form method="post" action="/login">
@@ -108,6 +120,11 @@ def _next_job_id() -> str:
 
 
 class Handler(BaseHTTPRequestHandler):
+    # socketserver applies this to every connection (see
+    # StreamRequestHandler.setup): a stalled body read times out instead
+    # of holding the thread forever.
+    timeout = REQUEST_TIMEOUT_S
+
     def _send(self, body: bytes, status: int = 200, headers: dict | None = None):
         self.send_response(status)
         self.send_header("content-type", "text/html; charset=utf-8")
@@ -128,7 +145,13 @@ class Handler(BaseHTTPRequestHandler):
         return False
 
     def _form(self) -> dict:
-        length = int(self.headers.get("content-length") or 0)
+        try:
+            length = int(self.headers.get("content-length") or 0)
+        except ValueError:
+            raise _FormTooLarge("unparseable content-length")
+        if length < 0 or length > MAX_FORM_BYTES:
+            # A negative length would make rfile.read() consume until EOF.
+            raise _FormTooLarge(f"content-length {length} out of bounds")
         data = parse_qs(self.rfile.read(length).decode())
         return {k: v[0] for k, v in data.items()}
 
@@ -155,7 +178,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        form = self._form()
+        try:
+            form = self._form()
+        except _FormTooLarge:
+            return self._send(_page("413", "request body too large"), 413)
         if path == "/login":
             if form.get("email") == DEMO_EMAIL and form.get("password") == DEMO_PASSWORD:
                 token = secrets.token_urlsafe(18)

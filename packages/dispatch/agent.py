@@ -24,7 +24,7 @@ from core.notify import GmailNotifier, QuoNotifier, SlackNotifier
 from . import desktop_fallback, ingest, mock_portal_server
 from .models import NeedsDesktopError, WorkOrder
 from .parse import parse_email_in_sandbox
-from .schedule import load_availability, propose_slots
+from .schedule import load_availability, propose_slots, record_booking
 from .portals import get_adapter
 
 
@@ -184,10 +184,25 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                 entry["status"] = status
             run_log.step("confirm", status="ok" if str(entry["status"]).startswith("booked") else "error",
                          job_status=entry["status"])
-            if str(entry["status"]).startswith("booked"):
+            booked = str(entry["status"]).startswith("booked")
+            if booked:
                 results["booked"] += 1
+            if entry.get("job_ref"):
+                # The job now exists in the portal and holds this slot:
+                # take it off the board so a later order in this same run
+                # is not proposed (and booked into) the very same slot.
+                record_booking(availability, slot, entry["job_ref"])
 
             # -- notify -------------------------------------------------------------
+            # Only a portal-confirmed booking is ever announced. Anything
+            # else (pending_board, an unverified desktop press, an error)
+            # stays silent — the customer is never told they are booked
+            # when the portal has not confirmed it.
+            if not booked:
+                run_log.step("notify", status="skipped",
+                             reason=f"portal status is {entry['status']!r}, "
+                                    "not booked — no notifications sent")
+                continue
             summary = (
                 f"Booked {order.source_id}: {order.trade} for {order.customer_name} "
                 f"@ {order.site_address} — {slot.label()}. Run: {run_log.run_id}"
@@ -208,6 +223,7 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                 payload={"to": to or "customer@example.com",
                          "subject": f"Your {order.trade} appointment is booked",
                          "body": email_body,
+                         "job_status": entry["status"],
                          "order": order.to_dict()},
                 requester="dispatch")
             if approved:
@@ -229,6 +245,7 @@ async def run(core, run_log: RunLog, cfg: dict | None = None) -> dict:
                 f"Text {order.tenant_phone or '+15555550100'}: {sms_text[:80]}",
                 payload={"to": order.tenant_phone or "+15555550100",
                          "text": sms_text,
+                         "job_status": entry["status"],
                          "order": order.to_dict()},
                 requester="dispatch")
             if approved:
