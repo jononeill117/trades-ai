@@ -43,7 +43,7 @@ class _RecordingGate:
         self.calls: list[dict] = []
 
     async def require(self, action, channel, summary, payload=None,
-                      requester="agent"):
+                      requester="agent", editable=True):
         self.calls.append({"action": action, "channel": channel,
                            "payload": payload or {}})
         return True
